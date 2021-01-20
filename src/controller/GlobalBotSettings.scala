@@ -10,6 +10,11 @@ import utopia.flow.util.TimeExtensions._
 object GlobalBotSettings
 {
 	/**
+	 * Number of pixels a single grid space takes
+	 */
+	val pixelsPerGridUnit = 48
+	
+	/**
 	 * How long it takes to move a single grid unit
 	 */
 	val singleMovementDuration = 0.5.seconds
