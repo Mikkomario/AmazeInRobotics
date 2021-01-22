@@ -2,7 +2,7 @@ package robots.model.enumeration
 
 import utopia.genesis.shape.shape2D.Direction2D
 import controller.GlobalBotSettings._
-import robots.model.enumeration.RobotCommandType.{HeadRotation, Movement}
+import robots.model.enumeration.RobotCommandType.{HeadRotation, Movement, Scan}
 import utopia.genesis.shape.shape1D.RotationDirection
 
 import scala.concurrent.duration.FiniteDuration
@@ -69,5 +69,17 @@ object RobotCommand
 		override def name = s"Rotate head $direction"
 		
 		override def duration = defaultRotationDuration
+	}
+	
+	/**
+	 * Performs a linear scan to recognize surroundings
+	 */
+	case object LinearScan extends RobotCommand
+	{
+		override def commandType = Scan
+		
+		override def name = "Scan (linear)"
+		
+		override def duration = defaultScanDuration
 	}
 }

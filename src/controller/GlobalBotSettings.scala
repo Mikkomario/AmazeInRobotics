@@ -16,6 +16,11 @@ object GlobalBotSettings
 	val pixelsPerGridUnit = 48
 	
 	/**
+	 * How long a bot is stunned by default
+	 */
+	val defaultStunDuration = 1.seconds
+	
+	/**
 	 * How long it takes to move a single grid unit
 	 */
 	val singleMovementDuration = 0.5.seconds
@@ -24,6 +29,11 @@ object GlobalBotSettings
 	 * How long rotation actions take by default
 	 */
 	val defaultRotationDuration = 0.2.seconds
+	
+	/**
+	 * How long it takes to perform a standard scan
+	 */
+	val defaultScanDuration = 0.75.seconds
 	
 	/**
 	 * Pixel-wise size of a single grid square

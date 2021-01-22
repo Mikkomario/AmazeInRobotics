@@ -2,28 +2,40 @@ package controller
 
 import controller.GlobalBotSettings._
 import robots.model.GridPosition
-import robots.model.enumeration.RobotCommand
-import robots.model.enumeration.RobotCommand.{Move, MoveTowards, RotateHead}
+import robots.model.enumeration.{PermanentSquare, RobotCommand, TemporarySquare}
+import robots.model.enumeration.RobotCommand.{LinearScan, Move, MoveTowards, RotateHead}
 import robots.model.enumeration.RobotCommandType.{HeadRotation, Movement}
+import robots.model.enumeration.Square.Empty
 import utopia.flow.async.VolatileOption
 import utopia.flow.collection.VolatileList
 import utopia.flow.datastructure.mutable.PointerWithEvents
+import utopia.flow.util.CollectionExtensions._
+import utopia.genesis.animation.Animation
 import utopia.genesis.color.Color
 import utopia.genesis.handling.{Actor, Drawable}
 import utopia.genesis.shape.shape1D.{Angle, Rotation, RotationDirection}
+import utopia.genesis.shape.shape2D.Direction2D.{Down, Up}
 import utopia.genesis.shape.shape2D._
 import utopia.genesis.util.Drawer
 import utopia.inception.handling.immutable.Handleable
 
+import java.time.Instant
+import scala.collection.immutable.HashMap
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
+
+object Bot
+{
+	private val stunRotationAnimation = Animation { p => Rotation.ofCircles(p * 2) }.projectileCurved.reversed
+}
 
 /**
  * Bots are the controlled units in this game
  * @author Mikko Hilpinen
  * @since 20.1.2021, v1
  */
-class Bot(initialPosition: GridPosition, initialHeading: Direction2D, bodyColor: Color, headColor: Color)
+class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction2D, bodyColor: Color, headColor: Color,
+          scanColor: Color)
 	extends Handleable with Actor with Drawable
 {
 	// ATTRIBUTES   ------------------------
@@ -33,15 +45,21 @@ class Bot(initialPosition: GridPosition, initialHeading: Direction2D, bodyColor:
 	private val commandQueue = VolatileList[(RobotCommand, Option[Promise[Unit]])]()
 	// 0 initially, 1 when command is completed
 	private var currentCommandProgress = 0.0
+	private var remainingStun = 0.0
 	
 	private val _gridPositionPointer = new PointerWithEvents(initialPosition)
-	private var currentMovementDirection: Option[Direction2D] = None
+	private val _currentMovementDirectionPointer = new PointerWithEvents[Option[Direction2D]](None)
 	
 	private var heading = initialHeading
 	private var currentRotationDirection: Option[RotationDirection] = None
 	
 	private val baseHeadTriangle = Triangle(Point.origin, Vector2D(-pixelsPerGridUnit / 2.0, -pixelsPerGridUnit / 2.0),
 		Vector2D(pixelsPerGridUnit / 2.0, -pixelsPerGridUnit / 2.0))
+	
+	private var knownMap: Map[GridPosition, PermanentSquare] = HashMap(initialPosition -> Empty)
+	private var temporariesMemory: Map[GridPosition, (TemporarySquare, Instant)] = HashMap()
+	
+	private var currentScanShape: Option[Bounds] = None
 	
 	/**
 	 * A pointer that contains whether this bot is currently idle (without anything to do)
@@ -56,10 +74,21 @@ class Bot(initialPosition: GridPosition, initialHeading: Direction2D, bodyColor:
 	/**
 	 * @return A pointer to this bot's position on the grid
 	 */
-	def gridPositionPointer = _gridPositionPointer.view
+	def worldGridPositionPointer = _gridPositionPointer
+		.mergeWith(_currentMovementDirectionPointer) { (p, dir) =>
+			dir match
+			{
+				case Some(dir) => p + dir
+				case None => p
+			}
+		}
 	
 	def gridPosition = _gridPositionPointer.value
 	private def gridPosition_=(newPosition: GridPosition) = _gridPositionPointer.value = newPosition
+	
+	def currentMovementDirection = _currentMovementDirectionPointer.value
+	private def currentMovementDirection_=(newDirection: Option[Direction2D]) =
+		_currentMovementDirectionPointer.value = newDirection
 	
 	/**
 	 * @return Whether this robot is currently fulfilling a command
@@ -88,10 +117,14 @@ class Bot(initialPosition: GridPosition, initialHeading: Direction2D, bodyColor:
 	/**
 	 * @return The direction towards which the head of this robot points at this time
 	 */
-	def headAngle = currentRotationDirection match
+	def headAngle =
 	{
-		case Some(direction) => heading.toAngle + Rotation.ofDegrees(currentCommandProgress * 90, direction)
-		case None => heading.toAngle
+		val standard = currentRotationDirection match
+		{
+			case Some(direction) => heading.toAngle + Rotation.ofDegrees(currentCommandProgress * 90, direction)
+			case None => heading.toAngle
+		}
+		standard + Bot.stunRotationAnimation(remainingStun)
 	}
 	
 	private def currentCommand = _currentCommandPointer.value.orElse {
@@ -114,20 +147,24 @@ class Bot(initialPosition: GridPosition, initialHeading: Direction2D, bodyColor:
 	
 	override def act(duration: FiniteDuration) =
 	{
-		// Chooses the command to advance
-		currentCommand.foreach { case (command, completionPromise) =>
-			// Advances the command completion
-			currentCommandProgress += duration / command.duration
-			// Checks whether command should be completed
-			if (currentCommandProgress >= 1)
-			{
-				finish(command)
-				_currentCommandPointer.clear()
-				currentCommandProgress = (currentCommandProgress - 1) min 1.0
-				// Completes the promise once the command has finished
-				completionPromise.foreach { _.success(()) }
+		// If currently stunned, decreases the stun before continuing next action
+		if (remainingStun > 0)
+			remainingStun = (remainingStun - duration / defaultStunDuration) max 0.0
+		else
+			// Chooses the command to advance
+			currentCommand.foreach { case (command, completionPromise) =>
+				// Advances the command completion
+				currentCommandProgress += duration / command.duration
+				// Checks whether command should be completed
+				if (currentCommandProgress >= 1)
+				{
+					finish(command)
+					_currentCommandPointer.clear()
+					currentCommandProgress = 0.0
+					// Completes the promise once the command has finished
+					completionPromise.foreach { _.success(()) }
+				}
 			}
-		}
 	}
 	
 	override def draw(drawer: Drawer) =
@@ -137,6 +174,8 @@ class Bot(initialPosition: GridPosition, initialHeading: Direction2D, bodyColor:
 		drawer.onlyFill(bodyColor).draw(Bounds(origin.toPoint, gridSquarePixelSize).toRoundedRectangle())
 		// Then draws the robot head as a triangle
 		drawer.onlyFill(headColor).translated(gridSquarePixelSize / 2).draw(headTriangle)
+		// May also draw the scan shape
+		currentScanShape.foreach { scanShape => drawer.onlyFill(scanColor).draw(scanShape) }
 	}
 	
 	
@@ -206,6 +245,7 @@ class Bot(initialPosition: GridPosition, initialHeading: Direction2D, bodyColor:
 		case Move(direction) => startMovingTowards(direction.toDirection(heading))
 		case MoveTowards(direction) => startMovingTowards(direction)
 		case RotateHead(direction) => currentRotationDirection = Some(direction)
+		case LinearScan => startLinearScan()
 	}
 	
 	private def finish(command: RobotCommand) = command.commandType match
@@ -216,7 +256,72 @@ class Bot(initialPosition: GridPosition, initialHeading: Direction2D, bodyColor:
 		case HeadRotation =>
 			currentRotationDirection.foreach { direction => heading = heading.rotatedQuarterTowards(direction) }
 			currentRotationDirection = None
+		case _ =>
+			command match
+			{
+				case LinearScan =>
+					currentScanShape = None
+					// Updates memory data
+					val originPosition = gridPosition
+					val direction = heading
+					val dataTime = Instant.now()
+					val squares = world.state.scan(originPosition, direction)
+					val (temporaryUpdates, permanentUpdates) = squares.zipWithIndex.dividedWith { case (square, index) =>
+						val coordinate = originPosition.towards(direction, index + 1)
+						square match
+						{
+							case p: PermanentSquare => Right(coordinate -> p)
+							case t: TemporarySquare => Left(coordinate -> (t -> dataTime))
+						}
+					}
+					knownMap ++= permanentUpdates
+					temporariesMemory ++= temporaryUpdates
+				case _ => ()
+			}
 	}
 	
-	private def startMovingTowards(direction: Direction2D) = currentMovementDirection = Some(direction)
+	private def startMovingTowards(direction: Direction2D) =
+	{
+		// If the specified direction is free, starts moving
+		if (world.state(gridPosition + direction).isPassable)
+			currentMovementDirection = Some(direction)
+		// Otherwise aborts the action and stuns
+		else
+		{
+			_currentCommandPointer.clear()
+			remainingStun = 1.0
+		}
+	}
+	
+	// Activates the linear scanner feature
+	private def startLinearScan() =
+	{
+		// Calculates the scan shape object
+		val scanBeamLength = world.state.scan(gridPosition, heading).size * pixelsPerGridUnit
+		currentScanShape = Some(heading match
+		{
+			case Up => Bounds(gridPosition * pixelsPerGridUnit - Vector2D(0, scanBeamLength),
+				Size(pixelsPerGridUnit, scanBeamLength))
+			case Down => Bounds((gridPosition + (0, 1)) * pixelsPerGridUnit, Size(pixelsPerGridUnit, scanBeamLength))
+			case Direction2D.Left => Bounds(gridPosition * pixelsPerGridUnit - Vector2D(scanBeamLength),
+				Size(scanBeamLength, pixelsPerGridUnit))
+			case Direction2D.Right => Bounds((gridPosition + (1, 0)) * pixelsPerGridUnit,
+				Size(scanBeamLength, pixelsPerGridUnit))
+		})
+	}
+	
+	
+	// NESTED   ------------------------------
+	
+	object BotWorldDrawer extends Drawable with Handleable
+	{
+		override def draw(drawer: Drawer) =
+		{
+			// Draws all memorized locations
+			val drawers = PermanentSquare.values.map { s => s -> drawer.onlyFill(s.color) }.toMap
+			knownMap.foreach { case (position, square) =>
+				drawers(square).draw(Bounds(position * pixelsPerGridUnit, gridSquarePixelSize))
+			}
+		}
+	}
 }

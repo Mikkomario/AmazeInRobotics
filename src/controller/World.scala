@@ -35,6 +35,6 @@ class World(base: BaseGrid)
 	def registerBot(bot: Bot) =
 	{
 		bots :+= bot
-		bot.gridPositionPointer.addAnyChangeListener { worldStatePointer.reset() }
+		bot.worldGridPositionPointer.addAnyChangeListener { worldStatePointer.reset() }
 	}
 }

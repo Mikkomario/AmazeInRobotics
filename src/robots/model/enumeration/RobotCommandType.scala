@@ -18,4 +18,9 @@ object RobotCommandType
 	 * Command type for robot head rotation commands
 	 */
 	case object HeadRotation extends RobotCommandType
+	
+	/**
+	 * Command type for scanning features
+	 */
+	case object Scan extends RobotCommandType
 }
