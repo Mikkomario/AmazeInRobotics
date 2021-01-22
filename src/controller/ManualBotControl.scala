@@ -1,6 +1,5 @@
 package controller
 
-import robots.model.Bot
 import robots.model.enumeration.RelativeDirection.{Backward, Forward}
 import robots.model.enumeration.RobotCommand.{Move, MoveTowards, RotateHead}
 import utopia.genesis.event.KeyStateEvent

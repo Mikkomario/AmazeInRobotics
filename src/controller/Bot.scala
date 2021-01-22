@@ -1,20 +1,22 @@
-package robots.model
+package controller
 
+import controller.GlobalBotSettings._
+import robots.model.GridPosition
 import robots.model.enumeration.RobotCommand
 import robots.model.enumeration.RobotCommand.{Move, MoveTowards, RotateHead}
 import robots.model.enumeration.RobotCommandType.{HeadRotation, Movement}
-import controller.GlobalBotSettings._
 import utopia.flow.async.VolatileOption
 import utopia.flow.collection.VolatileList
+import utopia.flow.datastructure.mutable.PointerWithEvents
 import utopia.genesis.color.Color
 import utopia.genesis.handling.{Actor, Drawable}
 import utopia.genesis.shape.shape1D.{Angle, Rotation, RotationDirection}
-import utopia.genesis.shape.shape2D.{Bounds, Direction2D, Point, Triangle, Vector2D}
+import utopia.genesis.shape.shape2D._
 import utopia.genesis.util.Drawer
 import utopia.inception.handling.immutable.Handleable
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.{ExecutionContext, Future, Promise}
 
 /**
  * Bots are the controlled units in this game
@@ -32,7 +34,7 @@ class Bot(initialPosition: GridPosition, initialHeading: Direction2D, bodyColor:
 	// 0 initially, 1 when command is completed
 	private var currentCommandProgress = 0.0
 	
-	private var gridPosition = initialPosition
+	private val _gridPositionPointer = new PointerWithEvents(initialPosition)
 	private var currentMovementDirection: Option[Direction2D] = None
 	
 	private var heading = initialHeading
@@ -50,6 +52,14 @@ class Bot(initialPosition: GridPosition, initialHeading: Direction2D, bodyColor:
 	
 	
 	// COMPUTED ----------------------------
+	
+	/**
+	 * @return A pointer to this bot's position on the grid
+	 */
+	def gridPositionPointer = _gridPositionPointer.view
+	
+	def gridPosition = _gridPositionPointer.value
+	private def gridPosition_=(newPosition: GridPosition) = _gridPositionPointer.value = newPosition
 	
 	/**
 	 * @return Whether this robot is currently fulfilling a command

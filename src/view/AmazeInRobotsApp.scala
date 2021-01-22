@@ -1,7 +1,7 @@
 package view
 
-import controller.{GlobalBotSettings, ManualBotControl, MapReader}
-import robots.model.{Bot, GridPosition}
+import controller.{Bot, GlobalBotSettings, ManualBotControl, MapReader}
+import robots.model.GridPosition
 import utopia.flow.async.ThreadPool
 import utopia.flow.util.FileExtensions._
 import utopia.genesis.color.Color
