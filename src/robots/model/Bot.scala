@@ -8,9 +8,8 @@ import utopia.flow.async.VolatileOption
 import utopia.flow.collection.VolatileList
 import utopia.genesis.color.Color
 import utopia.genesis.handling.{Actor, Drawable}
-import utopia.genesis.shape.shape1D.RotationDirection.{Clockwise, Counterclockwise}
 import utopia.genesis.shape.shape1D.{Angle, Rotation, RotationDirection}
-import utopia.genesis.shape.shape2D.{Bounds, Direction2D, Point, Size, Triangle, Vector2D}
+import utopia.genesis.shape.shape2D.{Bounds, Direction2D, Point, Triangle, Vector2D}
 import utopia.genesis.util.Drawer
 import utopia.inception.handling.immutable.Handleable
 
@@ -125,11 +124,9 @@ class Bot(initialPosition: GridPosition, initialHeading: Direction2D, bodyColor:
 	{
 		// Draws the hull as a rounded rectangle
 		val origin = drawPosition
-		val halfGridSquare = pixelsPerGridUnit / 2.0
-		drawer.onlyFill(bodyColor).draw(Bounds(origin.toPoint - Vector2D(halfGridSquare, halfGridSquare),
-			Size(pixelsPerGridUnit, pixelsPerGridUnit)).toRoundedRectangle())
+		drawer.onlyFill(bodyColor).draw(Bounds(origin.toPoint, gridSquarePixelSize).toRoundedRectangle())
 		// Then draws the robot head as a triangle
-		drawer.onlyFill(headColor).draw(headTriangle)
+		drawer.onlyFill(headColor).translated(gridSquarePixelSize / 2).draw(headTriangle)
 	}
 	
 	

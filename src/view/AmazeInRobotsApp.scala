@@ -1,8 +1,9 @@
 package view
 
-import controller.{GlobalBotSettings, ManualBotControl}
+import controller.{GlobalBotSettings, ManualBotControl, MapReader}
 import robots.model.{Bot, GridPosition}
 import utopia.flow.async.ThreadPool
+import utopia.flow.util.FileExtensions._
 import utopia.genesis.color.Color
 import utopia.genesis.shape.shape2D.Direction2D.Up
 import utopia.genesis.shape.shape2D.Size
@@ -20,13 +21,14 @@ object AmazeInRobotsApp extends App
 {
 	implicit val exc: ExecutionContext = new ThreadPool("AmazeInRobots").executionContext
 	
+	val map = MapReader("test-data/test-map-1.txt").get
 	val bot = new Bot(GridPosition(5, 5), Up, Color.red.timesLuminosity(0.66), Color.red)
 	val controller = new ManualBotControl(bot)
 	
 	val worldSize = Size(10, 10) * GlobalBotSettings.pixelsPerGridUnit
 	val setup = new DefaultSetup(worldSize, "AmazeInRobots")
 	
-	setup.registerObjects(bot, controller)
+	setup.registerObjects(new BaseGridDrawer(map), bot, controller)
 	
 	GlobalKeyboardEventHandler.specifyExecutionContext(exc)
 	setup.start()

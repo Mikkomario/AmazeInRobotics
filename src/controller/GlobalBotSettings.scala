@@ -1,6 +1,7 @@
 package controller
 
 import utopia.flow.util.TimeExtensions._
+import utopia.genesis.shape.shape2D.Size
 
 /**
  * Global configurations used in bot functions
@@ -23,4 +24,9 @@ object GlobalBotSettings
 	 * How long rotation actions take by default
 	 */
 	val defaultRotationDuration = 0.2.seconds
+	
+	/**
+	 * Pixel-wise size of a single grid square
+	 */
+	val gridSquarePixelSize = Size(pixelsPerGridUnit, pixelsPerGridUnit)
 }
