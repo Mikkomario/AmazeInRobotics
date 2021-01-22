@@ -2,7 +2,8 @@ package robots.model.enumeration
 
 import utopia.genesis.shape.shape2D.Direction2D
 import controller.GlobalBotSettings._
-import robots.model.enumeration.RobotCommandType.Movement
+import robots.model.enumeration.RobotCommandType.{HeadRotation, Movement}
+import utopia.genesis.shape.shape1D.RotationDirection
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -55,5 +56,18 @@ object RobotCommand
 		override def duration = singleMovementDuration
 		
 		override def commandType = Movement
+	}
+	
+	/**
+	 * Rotates the head of the robot to the specified direction
+	 * @param direction Direction towards which the head is rotated
+	 */
+	case class RotateHead(direction: RotationDirection) extends RobotCommand
+	{
+		override def commandType = HeadRotation
+		
+		override def name = s"Rotate head $direction"
+		
+		override def duration = defaultRotationDuration
 	}
 }

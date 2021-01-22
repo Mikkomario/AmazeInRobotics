@@ -1,9 +1,11 @@
 package controller
 
 import robots.model.Bot
-import robots.model.enumeration.RobotCommand.MoveTowards
+import robots.model.enumeration.RelativeDirection.{Backward, Forward}
+import robots.model.enumeration.RobotCommand.{Move, MoveTowards, RotateHead}
 import utopia.genesis.event.KeyStateEvent
 import utopia.genesis.handling.KeyStateListener
+import utopia.genesis.shape.shape1D.RotationDirection.{Clockwise, Counterclockwise}
 import utopia.inception.handling.HandlerType
 
 /**
@@ -21,7 +23,21 @@ class ManualBotControl(bot: Bot) extends KeyStateListener
 	
 	// IMPLEMENTED  -----------------------------
 	
-	override def onKeyState(event: KeyStateEvent) = event.arrow.foreach { arrow => bot.push(MoveTowards(arrow)) }
+	override def onKeyState(event: KeyStateEvent) = event.arrow.foreach { arrow =>
+		val command =
+		{
+			if (event.keyStatus.control)
+				arrow.horizontal match
+				{
+					case Some(horizontalDir) =>
+						RotateHead(if (horizontalDir.sign.isPositive) Clockwise else Counterclockwise)
+					case None => Move(if (arrow.sign.isPositive) Backward else Forward)
+				}
+			else
+				MoveTowards(arrow)
+		}
+		bot.push(command)
+	}
 	
 	override def allowsHandlingFrom(handlerType: HandlerType) = true
 }

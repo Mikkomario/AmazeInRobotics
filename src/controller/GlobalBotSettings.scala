@@ -18,4 +18,9 @@ object GlobalBotSettings
 	 * How long it takes to move a single grid unit
 	 */
 	val singleMovementDuration = 0.5.seconds
+	
+	/**
+	 * How long rotation actions take by default
+	 */
+	val defaultRotationDuration = 0.2.seconds
 }

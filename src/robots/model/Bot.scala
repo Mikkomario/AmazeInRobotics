@@ -1,13 +1,14 @@
 package robots.model
 
 import robots.model.enumeration.RobotCommand
-import robots.model.enumeration.RobotCommand.{Move, MoveTowards}
-import robots.model.enumeration.RobotCommandType.Movement
+import robots.model.enumeration.RobotCommand.{Move, MoveTowards, RotateHead}
+import robots.model.enumeration.RobotCommandType.{HeadRotation, Movement}
 import controller.GlobalBotSettings._
 import utopia.flow.async.VolatileOption
 import utopia.flow.collection.VolatileList
 import utopia.genesis.color.Color
 import utopia.genesis.handling.{Actor, Drawable}
+import utopia.genesis.shape.shape1D.RotationDirection.{Clockwise, Counterclockwise}
 import utopia.genesis.shape.shape1D.{Angle, Rotation, RotationDirection}
 import utopia.genesis.shape.shape2D.{Bounds, Direction2D, Point, Size, Triangle, Vector2D}
 import utopia.genesis.util.Drawer
@@ -35,9 +36,8 @@ class Bot(initialPosition: GridPosition, initialHeading: Direction2D, bodyColor:
 	private var gridPosition = initialPosition
 	private var currentMovementDirection: Option[Direction2D] = None
 	
-	// TODO: Add rotation command support
-	private val heading = initialHeading
-	private val currentRotationDirection: Option[RotationDirection] = None
+	private var heading = initialHeading
+	private var currentRotationDirection: Option[RotationDirection] = None
 	
 	private val baseHeadTriangle = Triangle(Point.origin, Vector2D(-pixelsPerGridUnit / 2.0, -pixelsPerGridUnit / 2.0),
 		Vector2D(pixelsPerGridUnit / 2.0, -pixelsPerGridUnit / 2.0))
@@ -48,9 +48,6 @@ class Bot(initialPosition: GridPosition, initialHeading: Direction2D, bodyColor:
 	val isIdlePointer = _currentCommandPointer.mergeWith(commandQueue) { (current, queue) =>
 		current.isEmpty && queue.isEmpty
 	}
-	
-	
-	// INITIAL CODE ------------------------
 	
 	
 	// COMPUTED ----------------------------
@@ -201,6 +198,7 @@ class Bot(initialPosition: GridPosition, initialHeading: Direction2D, bodyColor:
 	{
 		case Move(direction) => startMovingTowards(direction.toDirection(heading))
 		case MoveTowards(direction) => startMovingTowards(direction)
+		case RotateHead(direction) => currentRotationDirection = Some(direction)
 	}
 	
 	private def finish(command: RobotCommand) = command.commandType match
@@ -208,6 +206,9 @@ class Bot(initialPosition: GridPosition, initialHeading: Direction2D, bodyColor:
 		case Movement =>
 			currentMovementDirection.foreach { gridPosition += _ }
 			currentMovementDirection = None
+		case HeadRotation =>
+			currentRotationDirection.foreach { direction => heading = heading.rotatedQuarterTowards(direction) }
+			currentRotationDirection = None
 	}
 	
 	private def startMovingTowards(direction: Direction2D) = currentMovementDirection = Some(direction)

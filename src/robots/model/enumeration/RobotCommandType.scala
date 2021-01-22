@@ -13,4 +13,9 @@ object RobotCommandType
 	 * Common type for (grid) movement commands
 	 */
 	case object Movement extends RobotCommandType
+	
+	/**
+	 * Command type for robot head rotation commands
+	 */
+	case object HeadRotation extends RobotCommandType
 }
