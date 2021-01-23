@@ -31,6 +31,7 @@ object AmazeInRobotsApp extends App
 	
 	val worldSize = Size(10, 10) * GlobalBotSettings.pixelsPerGridUnit
 	val setup = new DefaultSetup(worldSize, "AmazeInRobots")
+	setup.canvas.setBackground(Color.blue.withLuminosity(0.25).toAwt)
 	
 	setup.registerObjects(/*new BaseGridDrawer(map)*/bot.BotWorldDrawer, bot, controller)
 	

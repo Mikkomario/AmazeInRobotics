@@ -5,7 +5,7 @@ import controller.GlobalBotSettings._
 import robots.model.enumeration.RobotCommandType.{HeadRotation, Movement, Scan}
 import utopia.genesis.shape.shape1D.RotationDirection
 
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.Duration
 
 /**
  * A common trait for various commands a control unit an give to a bot
@@ -27,7 +27,7 @@ sealed trait RobotCommand
 	/**
 	 * @return How long it takes to execute this command
 	 */
-	def duration: FiniteDuration
+	def duration: Duration
 }
 
 object RobotCommand
@@ -81,5 +81,26 @@ object RobotCommand
 		override def name = "Scan (linear)"
 		
 		override def duration = defaultScanDuration
+	}
+	
+	/**
+	 * Scans a single adjacent block
+	 */
+	case object MiniScan extends RobotCommand
+	{
+		override val duration = defaultScanDuration * 0.33
+		
+		override def commandType = Scan
+		
+		override def name = "Scan (mini)"
+	}
+	
+	case object WideScan extends RobotCommand
+	{
+		override val duration = defaultScanDuration * 2.5
+		
+		override def commandType = Scan
+		
+		override def name = "Scan (wide)"
 	}
 }

@@ -3,8 +3,8 @@ package controller
 import controller.GlobalBotSettings._
 import robots.model.GridPosition
 import robots.model.enumeration.{PermanentSquare, RobotCommand, TemporarySquare}
-import robots.model.enumeration.RobotCommand.{LinearScan, Move, MoveTowards, RotateHead}
-import robots.model.enumeration.RobotCommandType.{HeadRotation, Movement}
+import robots.model.enumeration.RobotCommand.{LinearScan, MiniScan, Move, MoveTowards, RotateHead, WideScan}
+import robots.model.enumeration.RobotCommandType.{HeadRotation, Movement, Scan}
 import robots.model.enumeration.Square.Empty
 import utopia.flow.async.VolatileOption
 import utopia.flow.collection.VolatileList
@@ -19,6 +19,7 @@ import utopia.genesis.shape.shape2D._
 import utopia.genesis.util.Drawer
 import utopia.inception.handling.immutable.Handleable
 
+import java.awt.Shape
 import java.time.Instant
 import scala.collection.immutable.HashMap
 import scala.concurrent.duration.FiniteDuration
@@ -59,7 +60,7 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	private var knownMap: Map[GridPosition, PermanentSquare] = HashMap(initialPosition -> Empty)
 	private var temporariesMemory: Map[GridPosition, (TemporarySquare, Instant)] = HashMap()
 	
-	private var currentScanShape: Option[Bounds] = None
+	private var currentScanShape: Option[Shape] = None
 	
 	/**
 	 * A pointer that contains whether this bot is currently idle (without anything to do)
@@ -140,7 +141,26 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	
 	private def drawPosition = position * pixelsPerGridUnit
 	
-	private def headTriangle = baseHeadTriangle.rotated(headAngle - Angle.up).translated(drawPosition)
+	private def centerDrawPosition = drawPosition + gridSquarePixelSize / 2
+	
+	private def headTriangle = baseHeadTriangle.rotated(headAngle - Angle.up).translated(centerDrawPosition)
+	
+	private def topLeftDrawPosition = drawPosition
+	
+	private def topRightDrawPosition = drawPosition + Vector2D(pixelsPerGridUnit)
+	
+	private def bottomLeftDrawPosition = drawPosition + Vector2D(0, pixelsPerGridUnit)
+	
+	private def bottomRightDrawPosition = drawPosition + gridSquarePixelSize
+	
+	// First left side corner, then right side corner
+	private def headCorners = heading match
+	{
+		case Up => topLeftDrawPosition -> topRightDrawPosition
+		case Direction2D.Right => topRightDrawPosition -> bottomRightDrawPosition
+		case Down => bottomRightDrawPosition -> bottomLeftDrawPosition
+		case Direction2D.Left => bottomLeftDrawPosition -> topLeftDrawPosition
+	}
 	
 	
 	// IMPLEMENTED  ------------------------
@@ -173,7 +193,7 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 		val origin = drawPosition
 		drawer.onlyFill(bodyColor).draw(Bounds(origin.toPoint, gridSquarePixelSize).toRoundedRectangle())
 		// Then draws the robot head as a triangle
-		drawer.onlyFill(headColor).translated(gridSquarePixelSize / 2).draw(headTriangle)
+		drawer.onlyFill(headColor).draw(headTriangle)
 		// May also draw the scan shape
 		currentScanShape.foreach { scanShape => drawer.onlyFill(scanColor).draw(scanShape) }
 	}
@@ -246,6 +266,8 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 		case MoveTowards(direction) => startMovingTowards(direction)
 		case RotateHead(direction) => currentRotationDirection = Some(direction)
 		case LinearScan => startLinearScan()
+		case MiniScan => startMiniScan()
+		case WideScan => startWideScan()
 	}
 	
 	private def finish(command: RobotCommand) = command.commandType match
@@ -256,24 +278,43 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 		case HeadRotation =>
 			currentRotationDirection.foreach { direction => heading = heading.rotatedQuarterTowards(direction) }
 			currentRotationDirection = None
-		case _ =>
+		case Scan =>
+			currentScanShape = None
+			val dataTime = Instant.now()
 			command match
 			{
 				case LinearScan =>
-					currentScanShape = None
 					// Updates memory data
 					val originPosition = gridPosition
 					val direction = heading
-					val dataTime = Instant.now()
 					val squares = world.state.scan(originPosition, direction)
-					val (temporaryUpdates, permanentUpdates) = squares.zipWithIndex.dividedWith { case (square, index) =>
-						val coordinate = originPosition.towards(direction, index + 1)
+					val (temporaryUpdates, permanentUpdates) = squares.dividedWith { case (position, square) =>
 						square match
 						{
-							case p: PermanentSquare => Right(coordinate -> p)
-							case t: TemporarySquare => Left(coordinate -> (t -> dataTime))
+							case p: PermanentSquare => Right(position -> p)
+							case t: TemporarySquare => Left(position -> (t -> dataTime))
 						}
 					}
+					knownMap ++= permanentUpdates
+					temporariesMemory ++= temporaryUpdates
+				case MiniScan =>
+					// Updates memory data
+					val targetPosition = gridPosition + heading
+					world.state.get(targetPosition).foreach
+					{
+						case p: PermanentSquare => knownMap += targetPosition -> p
+						case t: TemporarySquare => temporariesMemory += targetPosition -> (t -> dataTime)
+					}
+				case WideScan =>
+					// Updates memory data
+					val (temporaryUpdates, permanentUpdates) = world.state.wideScan(gridPosition, heading).values.flatten
+						.dividedWith { case (position, square) =>
+							square match
+							{
+								case p: PermanentSquare => Right(position -> p)
+								case t: TemporarySquare => Left(position -> (t -> dataTime))
+							}
+						}
 					knownMap ++= permanentUpdates
 					temporariesMemory ++= temporaryUpdates
 				case _ => ()
@@ -296,18 +337,60 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	// Activates the linear scanner feature
 	private def startLinearScan() =
 	{
-		// Calculates the scan shape object
-		val scanBeamLength = world.state.scan(gridPosition, heading).size * pixelsPerGridUnit
-		currentScanShape = Some(heading match
+		val scanBeamLength = world.state.scan(gridPosition, heading).size
+		val beamTip = drawPosition + gridSquarePixelSize / 2 + heading((scanBeamLength + 0.5) * pixelsPerGridUnit)
+		val (leftOrigin, rightOrigin) = headCorners
+		val scanShape =
 		{
-			case Up => Bounds(gridPosition * pixelsPerGridUnit - Vector2D(0, scanBeamLength),
-				Size(pixelsPerGridUnit, scanBeamLength))
-			case Down => Bounds((gridPosition + (0, 1)) * pixelsPerGridUnit, Size(pixelsPerGridUnit, scanBeamLength))
-			case Direction2D.Left => Bounds(gridPosition * pixelsPerGridUnit - Vector2D(scanBeamLength),
-				Size(scanBeamLength, pixelsPerGridUnit))
-			case Direction2D.Right => Bounds((gridPosition + (1, 0)) * pixelsPerGridUnit,
-				Size(scanBeamLength, pixelsPerGridUnit))
-		})
+			// 1 / 0 square scan creates a triangle
+			if (scanBeamLength <= 1)
+				Triangle.withCorners(leftOrigin.toPoint, beamTip.toPoint, rightOrigin.toPoint)
+			// 2+ square scan creates a 5 corner shape (where the tip is a triangle and the rest is a rectangle)
+			else
+			{
+				val widePartVector = heading((scanBeamLength - 1) * pixelsPerGridUnit)
+				Polygon(Vector(leftOrigin, leftOrigin + widePartVector, beamTip,
+					rightOrigin + widePartVector, rightOrigin).map { _.toPoint })
+			}
+		}
+		currentScanShape = Some(scanShape.toShape)
+	}
+	
+	private def startMiniScan() = currentScanShape = Some(
+		Bounds((gridPosition + heading) * pixelsPerGridUnit, gridSquarePixelSize).toShape)
+	
+	private def startWideScan() =
+	{
+		val scanBeamLength = world.state.scan(gridPosition, heading).size
+		val beamTip = drawPosition + gridSquarePixelSize / 2 + heading((scanBeamLength + 0.5) * pixelsPerGridUnit)
+		val (leftOrigin, rightOrigin) = headCorners
+		val scanShape =
+		{
+			if (scanBeamLength > 1)
+			{
+				val wideEndVector = heading((scanBeamLength - 1.5) * pixelsPerGridUnit)
+				val leftShiftVector = heading.rotatedQuarterCounterClockwise(pixelsPerGridUnit / 2.0)
+				val rightShiftVector = heading.rotatedQuarterClockwise(pixelsPerGridUnit / 2.0)
+				val leftSideEnd = leftOrigin + wideEndVector + leftShiftVector
+				val rightSideEnd = rightOrigin + wideEndVector + rightShiftVector
+				// Longer than 2 square scan => creates a 7 corner shape
+				if (scanBeamLength > 2)
+				{
+					val wideStartVector = heading(pixelsPerGridUnit / 2.0)
+					val leftSideStart = leftOrigin + wideStartVector + leftShiftVector
+					val rightSideStart = rightOrigin + wideStartVector + rightShiftVector
+					Polygon(Vector(leftOrigin, leftSideStart, leftSideEnd, beamTip,
+						rightSideEnd, rightSideStart, rightOrigin).map { _.toPoint })
+				}
+				// 2 square scan creates a 5 corner shape
+				else
+					Polygon(Vector(leftOrigin, leftSideEnd, beamTip, rightSideEnd, rightOrigin).map { _.toPoint })
+			}
+			// 1 / 0 square scan creates a triangle
+			else
+				Triangle.withCorners(leftOrigin.toPoint, beamTip.toPoint, rightOrigin.toPoint)
+		}
+		currentScanShape = Some(scanShape.toShape)
 	}
 	
 	
