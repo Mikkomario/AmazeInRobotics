@@ -1,21 +1,32 @@
 package controller
 
-import robots.model.BaseGrid
-import robots.model.enumeration.Square.BotLocation
-import utopia.flow.datastructure.mutable.ResettableLazy
+import robots.model.{BaseGrid, GridPosition}
+import robots.model.enumeration.Square.{BotLocation, TreasureLocation}
+import utopia.flow.datastructure.mutable.{PointerWithEvents, ResettableLazy}
+import utopia.flow.event.ChangeListener
 
 /**
  * A world contains a base maze and also keeps track of and shares data with the bots
  * @author Mikko Hilpinen
  * @since 22.1.2021, v1
  */
-class World(base: BaseGrid)
+class World(val base: BaseGrid, treasures: Vector[GridPosition])
 {
 	// ATTRIBUTES   -----------------------------
 	
 	private var bots = Vector[Bot]()
 	
-	private val worldStatePointer = ResettableLazy { base ++ bots.map { _.gridPosition -> BotLocation } }
+	private val remainingTreasuresPointer = new PointerWithEvents(treasures)
+	private val worldStatePointer = ResettableLazy { base ++
+		(treasures.map { _ -> TreasureLocation } ++ bots.map { _.gridPosition -> BotLocation }) }
+	
+	private val resetWorldStateListener = ChangeListener.onAnyChange { worldStatePointer.reset() }
+	
+	
+	// INITIAL CODE -----------------------------
+	
+	// Updates world state when treasures are taken
+	remainingTreasuresPointer.addListener(resetWorldStateListener)
 	
 	
 	// COMPUTED ---------------------------------
@@ -35,6 +46,6 @@ class World(base: BaseGrid)
 	def registerBot(bot: Bot) =
 	{
 		bots :+= bot
-		bot.worldGridPositionPointer.addAnyChangeListener { worldStatePointer.reset() }
+		bot.worldGridPositionPointer.addListener(resetWorldStateListener)
 	}
 }

@@ -1,7 +1,10 @@
 package robots.model.enumeration
 
 import robots.model.enumeration.Square.{Empty, Wall}
+import utopia.flow.util.TimeExtensions._
 import utopia.genesis.color.Color
+
+import scala.concurrent.duration.Duration
 
 /**
  * A common trait for different types of grid squares
@@ -19,13 +22,7 @@ sealed trait Square
 	 * @return Whether this square blocks the line of sight
 	 */
 	def blocksSight: Boolean
-}
-
-/**
- * These squares don't appear or disappear
- */
-sealed trait PermanentSquare extends Square
-{
+	
 	/**
 	 * @return Color that represents this type of square
 	 */
@@ -33,9 +30,20 @@ sealed trait PermanentSquare extends Square
 }
 
 /**
+ * These squares don't appear or disappear
+ */
+sealed trait PermanentSquare extends Square
+
+/**
  * These squares may appear, disappear or move
  */
 sealed trait TemporarySquare extends Square
+{
+	/**
+	 * @return How long this temporary square should remain visible
+	 */
+	def visibilityDuration: Duration
+}
 
 object Square
 {
@@ -68,7 +76,25 @@ object Square
 	 */
 	object BotLocation extends TemporarySquare
 	{
+		override val color = Color.red
+		
+		override val visibilityDuration = 2.seconds
+		
 		override def isPassable = false
+		
+		override def blocksSight = false
+	}
+	
+	/**
+	 * A square that represents last known location of a treasure
+	 */
+	object TreasureLocation extends TemporarySquare
+	{
+		override val visibilityDuration = 25.seconds
+		
+		override def color = Color.red.average(Color.yellow).withLuminosity(0.7)
+		
+		override def isPassable = true
 		
 		override def blocksSight = false
 	}

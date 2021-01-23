@@ -275,6 +275,10 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 		case Movement =>
 			currentMovementDirection.foreach { gridPosition += _ }
 			currentMovementDirection = None
+			// May update memorized map data, if the new square was previously unknown
+			val newPosition = gridPosition
+			if (!knownMap.contains(newPosition))
+				world.base.get(newPosition).foreach { knownMap += newPosition -> _ }
 		case HeadRotation =>
 			currentRotationDirection.foreach { direction => heading = heading.rotatedQuarterTowards(direction) }
 			currentRotationDirection = None

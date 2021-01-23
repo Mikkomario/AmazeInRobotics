@@ -22,7 +22,7 @@ object AmazeInRobotsApp extends App
 	implicit val exc: ExecutionContext = new ThreadPool("AmazeInRobots").executionContext
 	
 	val map = MapReader("test-data/test-map-1.txt").get
-	val world = new World(map)
+	val world = new World(map, Vector()) // TODO: Read treasure locations (and bot start locations) from map and assign here
 	val bot = new Bot(world, GridPosition(5, 5), Up, Color.red.timesLuminosity(0.66), Color.red,
 		Color.cyan.withAlpha(0.66))
 	val controller = new ManualBotControl(bot)
