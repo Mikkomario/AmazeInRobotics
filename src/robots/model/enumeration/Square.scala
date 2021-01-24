@@ -13,6 +13,8 @@ import scala.concurrent.duration.Duration
  */
 sealed trait Square
 {
+	// ABSTRACT ----------------------------
+	
 	/**
 	 * @return Whether this square can be moved through
 	 */
@@ -27,6 +29,14 @@ sealed trait Square
 	 * @return Color that represents this type of square
 	 */
 	def color: Color
+	
+	
+	// COMPUTED ----------------------------
+	
+	/**
+	 * @return Whether this square can be seen through
+	 */
+	def canBeSeenTrough = !blocksSight
 }
 
 /**

@@ -43,9 +43,11 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 {
 	// ATTRIBUTES   ------------------------
 	
-	private val _currentCommandPointer = VolatileOption[(RobotCommand, Option[Promise[Unit]])]()
+	private var stunListeners = Vector[BotStunListener]()
+	
+	private val _currentCommandPointer = VolatileOption[(RobotCommand, Option[Promise[Boolean]])]()
 	// Queued command -> promise that will be fulfilled when the command is finished (optional)
-	private val commandQueue = VolatileList[(RobotCommand, Option[Promise[Unit]])]()
+	private val commandQueue = VolatileList[(RobotCommand, Option[Promise[Boolean]])]()
 	// 0 initially, 1 when command is completed
 	private var currentCommandProgress = 0.0
 	private var remainingStun = 0.0
@@ -187,7 +189,7 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 					_currentCommandPointer.clear()
 					currentCommandProgress = 0.0
 					// Completes the promise once the command has finished
-					completionPromise.foreach { _.success(()) }
+					completionPromise.foreach { _.success(true) }
 				}
 			}
 	}
@@ -207,13 +209,19 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	// OTHER    ----------------------------
 	
 	/**
+	 * Registers a new listener to be informed whenever this bot gets stunned
+	 * @param listener A bot stun listener
+	 */
+	def registerStunListener(listener: BotStunListener) = stunListeners :+= listener
+	
+	/**
 	 * Adds a new command for this bot, tracks the completion of that command
 	 * @param command Command to run
 	 * @return Future of the completion of this command
 	 */
 	def accept(command: RobotCommand) =
 	{
-		val completionPromise = Promise[Unit]()
+		val completionPromise = Promise[Boolean]()
 		commandQueue :+= (command, Some(completionPromise))
 		completionPromise.future
 	}
@@ -226,10 +234,10 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	def accept(commands: Seq[RobotCommand]) =
 	{
 		if (commands.isEmpty)
-			Future.successful(())
+			Future.successful(false)
 		else
 		{
-			val completionPromise = Promise[Unit]()
+			val completionPromise = Promise[Boolean]()
 			commandQueue ++= (commands.dropRight(1).map { _ -> None } :+ commands.last -> Some(completionPromise))
 			completionPromise.future
 		}
@@ -242,7 +250,7 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	 * @param moreCommands More commands to issue
 	 * @return Future of the completion of the last of these commands
 	 */
-	def accept(firstCommand: RobotCommand, secondCommand: RobotCommand, moreCommands: RobotCommand*): Future[Unit] =
+	def accept(firstCommand: RobotCommand, secondCommand: RobotCommand, moreCommands: RobotCommand*): Future[Boolean] =
 		accept(Vector(firstCommand, secondCommand) ++ moreCommands)
 	
 	/**
@@ -264,6 +272,23 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	 */
 	def push(firstCommand: RobotCommand, secondCommand: RobotCommand, moreCommands: RobotCommand*): Unit =
 		push(Vector(firstCommand, secondCommand) ++ moreCommands)
+	
+	/**
+	 * Cancels all queued commands
+	 * @return The number of commands that were cancelled
+	 */
+	def abortAllQueuedCommands() =
+	{
+		val aborted = commandQueue.popAll()
+		aborted.foreach { _._2.foreach { _.success(false) } }
+		aborted.size
+	}
+	
+	private def stun() =
+	{
+		remainingStun = 1.0
+		stunListeners.foreach { _.onBotStunned() }
+	}
 	
 	private def start(command: RobotCommand) = command match
 	{
@@ -351,7 +376,7 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 		else
 		{
 			_currentCommandPointer.clear()
-			remainingStun = 1.0
+			stun()
 		}
 	}
 	
