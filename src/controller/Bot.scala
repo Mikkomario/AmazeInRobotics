@@ -1,17 +1,13 @@
 package controller
 
 import controller.GlobalBotSettings._
-import robots.model.GridPosition
-import robots.model.enumeration.{PermanentSquare, RobotCommand, Square, TemporarySquare}
+import robots.model.{GridPosition, MapMemory}
+import robots.model.enumeration.RobotCommand
 import robots.model.enumeration.RobotCommand.{LinearScan, MiniScan, Move, MoveTowards, RotateHead, WideScan}
 import robots.model.enumeration.RobotCommandType.{HeadRotation, Interact, Movement, Scan}
-import robots.model.enumeration.Square.{Empty, TreasureLocation}
 import utopia.flow.async.VolatileOption
-import utopia.flow.caching.multi.Cache
 import utopia.flow.collection.VolatileList
 import utopia.flow.datastructure.mutable.PointerWithEvents
-import utopia.flow.util.CollectionExtensions._
-import utopia.flow.util.TimeExtensions._
 import utopia.genesis.animation.Animation
 import utopia.genesis.color.Color
 import utopia.genesis.handling.{Actor, Drawable}
@@ -23,7 +19,6 @@ import utopia.inception.handling.immutable.Handleable
 
 import java.awt.Shape
 import java.time.Instant
-import scala.collection.immutable.HashMap
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ExecutionContext, Future, Promise}
 
@@ -52,7 +47,8 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	private var currentCommandProgress = 0.0
 	private var remainingStun = 0.0
 	
-	private val _gridPositionPointer = new PointerWithEvents(initialPosition)
+	private val _memoryPointer = new PointerWithEvents(MapMemory(initialPosition, world.base(initialPosition)))
+	
 	private val _currentMovementDirectionPointer = new PointerWithEvents[Option[Direction2D]](None)
 	
 	private var heading = initialHeading
@@ -60,9 +56,6 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	
 	private val baseHeadTriangle = Triangle(Point.origin, Vector2D(-pixelsPerGridUnit / 2.0, -pixelsPerGridUnit / 2.0),
 		Vector2D(pixelsPerGridUnit / 2.0, -pixelsPerGridUnit / 2.0))
-	
-	private var knownMap: Map[GridPosition, PermanentSquare] = HashMap(initialPosition -> Empty)
-	private var temporariesMemory: Map[GridPosition, (TemporarySquare, Instant)] = HashMap()
 	
 	private var currentScanShape: Option[Shape] = None
 	
@@ -76,23 +69,28 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 		current.isEmpty && queue.isEmpty
 	}
 	
+	/**
+	 * A pointer to this bot's position on the grid
+	 */
+	val worldGridPositionPointer = _memoryPointer
+		.mergeWith(_currentMovementDirectionPointer) { (memory, dir) =>
+			dir match
+			{
+				case Some(dir) => memory.botLocation + dir
+				case None => memory.botLocation
+			}
+		}
+	
 	
 	// COMPUTED ----------------------------
 	
 	/**
-	 * @return A pointer to this bot's position on the grid
+	 * @return This bot's approximate coordinate in the world
 	 */
-	def worldGridPositionPointer = _gridPositionPointer
-		.mergeWith(_currentMovementDirectionPointer) { (p, dir) =>
-			dir match
-			{
-				case Some(dir) => p + dir
-				case None => p
-			}
-		}
+	def worldGridPosition = worldGridPositionPointer.value
 	
-	def gridPosition = _gridPositionPointer.value
-	private def gridPosition_=(newPosition: GridPosition) = _gridPositionPointer.value = newPosition
+	private def gridPosition = _memoryPointer.value.botLocation
+	// private def gridPosition_=(newPosition: GridPosition) = _memoryPointer.update { _.withBotLocation(newPosition) }
 	
 	def currentMovementDirection = _currentMovementDirectionPointer.value
 	private def currentMovementDirection_=(newDirection: Option[Direction2D]) =
@@ -304,12 +302,12 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	private def finish(command: RobotCommand) = command.commandType match
 	{
 		case Movement =>
-			currentMovementDirection.foreach { gridPosition += _ }
+			// May update memorized map data also
+			currentMovementDirection.foreach { direction =>
+				val newPosition = gridPosition + direction
+				_memoryPointer.update { _.withBotLocation(newPosition, world.base.get(newPosition)) }
+			}
 			currentMovementDirection = None
-			// May update memorized map data, if the new square was previously unknown
-			val newPosition = gridPosition
-			if (!knownMap.contains(newPosition))
-				world.base.get(newPosition).foreach { knownMap += newPosition -> _ }
 		case HeadRotation =>
 			currentRotationDirection.foreach { direction => heading = heading.rotatedQuarterTowards(direction) }
 			currentRotationDirection = None
@@ -320,38 +318,16 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 			{
 				case LinearScan =>
 					// Updates memory data
-					val originPosition = gridPosition
-					val direction = heading
-					val squares = world.state.scan(originPosition, direction)
-					val (temporaryUpdates, permanentUpdates) = squares.dividedWith { case (position, square) =>
-						square match
-						{
-							case p: PermanentSquare => Right(position -> p)
-							case t: TemporarySquare => Left(position -> (t -> dataTime))
-						}
-					}
-					knownMap ++= permanentUpdates
-					temporariesMemory ++= temporaryUpdates
+					_memoryPointer.update { _.withSquareData(world.state.scan(gridPosition, heading)) }
 				case MiniScan =>
 					// Updates memory data
 					val targetPosition = gridPosition + heading
-					world.state.get(targetPosition).foreach
-					{
-						case p: PermanentSquare => knownMap += targetPosition -> p
-						case t: TemporarySquare => temporariesMemory += targetPosition -> (t -> dataTime)
+					world.state.get(targetPosition).foreach { squareType =>
+						_memoryPointer.update { _.withUpdatedSquare(targetPosition, squareType, dataTime) }
 					}
 				case WideScan =>
 					// Updates memory data
-					val (temporaryUpdates, permanentUpdates) = world.state.wideScan(gridPosition, heading).values.flatten
-						.dividedWith { case (position, square) =>
-							square match
-							{
-								case p: PermanentSquare => Right(position -> p)
-								case t: TemporarySquare => Left(position -> (t -> dataTime))
-							}
-						}
-					knownMap ++= permanentUpdates
-					temporariesMemory ++= temporaryUpdates
+					_memoryPointer.update { _.withSquareData(world.state.wideScan(gridPosition, heading).values.flatten) }
 				case _ => ()
 			}
 		case Interact =>
@@ -363,8 +339,7 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 				println(s"Treasure collected, now $collectedTreasureCount")
 			}
 			// Updates memory afterwards
-			if (temporariesMemory.get(targetPosition).exists { _._1 == TreasureLocation })
-				temporariesMemory -= targetPosition
+			_memoryPointer.update { _.withoutTreasureAt(targetPosition) }
 	}
 	
 	private def startMovingTowards(direction: Direction2D) =
@@ -444,21 +419,7 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	
 	object BotWorldDrawer extends Drawable with Handleable
 	{
-		override def draw(drawer: Drawer) =
-		{
-			// Draws all memorized locations
-			val drawers = Cache[Square, Drawer] { s => drawer.onlyFill(s.color) }
-			knownMap.foreach { case (position, square) =>
-				drawers(square).draw(Bounds(position * pixelsPerGridUnit, gridSquarePixelSize))
-			}
-			// And all temporary memory locations
-			val now = Instant.now()
-			temporariesMemory.foreach { case (position, (square, time)) =>
-				val passedDuration = now - time
-				val visibility = 1.0 - passedDuration / square.visibilityDuration
-				if (visibility > 0)
-					drawers(square).withAlpha(visibility).draw(Bounds(position * pixelsPerGridUnit, gridSquarePixelSize))
-			}
-		}
+		// Delegates drawing
+		override def draw(drawer: Drawer) = _memoryPointer.value.draw(drawer)
 	}
 }

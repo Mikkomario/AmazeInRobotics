@@ -18,8 +18,10 @@ class World(val base: BaseGrid, treasures: Vector[GridPosition])
 	private var bots = Vector[Bot]()
 	
 	private val remainingTreasuresPointer = VolatileList(treasures)
-	private val worldStatePointer = ResettableLazy { base ++
-		(remainingTreasuresPointer.value.map { _ -> TreasureLocation } ++ bots.map { _.gridPosition -> BotLocation }) }
+	private val worldStatePointer = ResettableLazy {
+		base ++ (remainingTreasuresPointer.value.map { _ -> TreasureLocation } ++
+			bots.map { _.worldGridPosition -> BotLocation })
+	}
 	
 	private val resetWorldStateListener = ChangeListener.onAnyChange { worldStatePointer.reset() }
 	

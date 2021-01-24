@@ -30,6 +30,14 @@ case class GridPosition(override val x: Int, override val y: Int) extends TwoDim
 	override def *(mod: Double) = Point(x * mod, y * mod)
 	
 	
+	// COMPUTED -----------------------------
+	
+	/**
+	 * @return Positions adjacent to this one
+	 */
+	def adjacent = Direction2D.values.map { this + _ }
+	
+	
 	// OTHER    -----------------------------
 	
 	/**
