@@ -1,7 +1,7 @@
 package controller
 
 import controller.GlobalBotSettings._
-import robots.model.{GridPosition, MapMemory}
+import robots.model.{BotColors, GridPosition, MapMemory}
 import robots.model.enumeration.{RobotCommand, StunCause}
 import robots.model.enumeration.RobotCommand.{LinearScan, MiniScan, Move, MoveTowards, RotateHead, WideScan}
 import robots.model.enumeration.RobotCommandType.{HeadRotation, Interact, Movement, Scan}
@@ -10,7 +10,6 @@ import utopia.flow.async.VolatileOption
 import utopia.flow.collection.VolatileList
 import utopia.flow.datastructure.mutable.PointerWithEvents
 import utopia.genesis.animation.Animation
-import utopia.genesis.color.Color
 import utopia.genesis.handling.{Actor, Drawable}
 import utopia.genesis.shape.shape1D.{Angle, Rotation, RotationDirection}
 import utopia.genesis.shape.shape2D.Direction2D.{Down, Up}
@@ -33,8 +32,7 @@ object Bot
  * @author Mikko Hilpinen
  * @since 20.1.2021, v1
  */
-class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction2D, bodyColor: Color, headColor: Color,
-          scanColor: Color)
+class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction2D, colors: BotColors)
 	extends Handleable with Actor with Drawable
 {
 	// ATTRIBUTES   ------------------------
@@ -48,7 +46,7 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	private var currentCommandProgress = 0.0
 	private var remainingStun = 0.0
 	
-	private val _memoryPointer = new PointerWithEvents(MapMemory(initialPosition, world.base(initialPosition)))
+	private val _memoryPointer = new PointerWithEvents(MapMemory(GridPosition.origin, world.base(initialPosition)))
 	
 	private val _currentMovementDirectionPointer = new PointerWithEvents[Option[Direction2D]](None)
 	
@@ -71,14 +69,19 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	}
 	
 	/**
+	 * A pointer to this bot's current position (in it's own relative coordinate system)
+	 */
+	val relativeGridPositionPointer = _memoryPointer.map { _.botLocation }
+	
+	/**
 	 * A pointer to this bot's position on the grid
 	 */
 	val worldGridPositionPointer = _memoryPointer
 		.mergeWith(_currentMovementDirectionPointer) { (memory, dir) =>
 			dir match
 			{
-				case Some(dir) => memory.botLocation + dir
-				case None => memory.botLocation
+				case Some(dir) => memory.botLocation + initialPosition + dir
+				case None => memory.botLocation + initialPosition
 			}
 		}
 	
@@ -108,8 +111,7 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	 */
 	def worldGridPosition = worldGridPositionPointer.value
 	
-	private def gridPosition = _memoryPointer.value.botLocation
-	// private def gridPosition_=(newPosition: GridPosition) = _memoryPointer.update { _.withBotLocation(newPosition) }
+	private def gridPosition = _memoryPointer.value.botLocation + initialPosition
 	
 	/**
 	 * @return A pointer to this bot's current movement direction. Contains None while this bot is not moving.
@@ -220,11 +222,11 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	{
 		// Draws the hull as a rounded rectangle
 		val origin = drawPosition
-		drawer.onlyFill(bodyColor).draw(Bounds(origin.toPoint, gridSquarePixelSize).toRoundedRectangle())
+		drawer.onlyFill(colors.body).draw(Bounds(origin.toPoint, gridSquarePixelSize).toRoundedRectangle())
 		// Then draws the robot head as a triangle
-		drawer.onlyFill(headColor).draw(headTriangle)
+		drawer.onlyFill(colors.head).draw(headTriangle)
 		// May also draw the scan shape
-		currentScanShape.foreach { scanShape => drawer.onlyFill(scanColor).draw(scanShape) }
+		currentScanShape.foreach { scanShape => drawer.onlyFill(colors.scanBeam).draw(scanShape) }
 	}
 	
 	
@@ -329,7 +331,7 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 			// May update memorized map data also
 			currentMovementDirection.foreach { direction =>
 				val newPosition = gridPosition + direction
-				_memoryPointer.update { _.withBotLocation(newPosition, world.base.get(newPosition)) }
+				_memoryPointer.update { _.withBotLocation(newPosition - initialPosition, world.base.get(newPosition)) }
 			}
 			currentMovementDirection = None
 		case HeadRotation =>
@@ -342,16 +344,18 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 			{
 				case LinearScan =>
 					// Updates memory data
-					_memoryPointer.update { _.withSquareData(world.state.scan(gridPosition, heading)) }
+					_memoryPointer.update { _.withSquareData(world.state.scan(gridPosition, heading)
+						.map { case (pos, square) => (pos - initialPosition) -> square }) }
 				case MiniScan =>
 					// Updates memory data
 					val targetPosition = gridPosition + heading
 					world.state.get(targetPosition).foreach { squareType =>
-						_memoryPointer.update { _.withUpdatedSquare(targetPosition, squareType, dataTime) }
+						_memoryPointer.update { _.withUpdatedSquare(targetPosition - initialPosition, squareType, dataTime) }
 					}
 				case WideScan =>
 					// Updates memory data
-					_memoryPointer.update { _.withSquareData(world.state.wideScan(gridPosition, heading).values.flatten) }
+					_memoryPointer.update { _.withSquareData(world.state.wideScan(gridPosition, heading)
+						.values.flatten.map { case (position, square) => (position - initialPosition) -> square }) }
 				case _ => ()
 			}
 		case Interact =>
@@ -363,7 +367,7 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 				println(s"Treasure collected, now $collectedTreasureCount")
 			}
 			// Updates memory afterwards
-			_memoryPointer.update { _.withoutTreasureAt(targetPosition) }
+			_memoryPointer.update { _.withoutTreasureAt(targetPosition - initialPosition) }
 	}
 	
 	private def startMovingTowards(direction: Direction2D) =
@@ -444,6 +448,6 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	object BotWorldDrawer extends Drawable with Handleable
 	{
 		// Delegates drawing
-		override def draw(drawer: Drawer) = _memoryPointer.value.draw(drawer)
+		override def draw(drawer: Drawer) = _memoryPointer.value.draw(drawer, initialPosition)
 	}
 }

@@ -4,6 +4,14 @@ import utopia.genesis.shape.shape2D.{Direction2D, Point, TwoDimensional, Vector2
 import Direction2D._
 import utopia.genesis.util.Scalable
 
+object GridPosition
+{
+	/**
+	 * The (0, 0) grid position
+	 */
+	val origin = GridPosition(0, 0)
+}
+
 /**
  * An integer-based position on a grid-like world
  * @author Mikko Hilpinen
@@ -41,6 +49,12 @@ case class GridPosition(override val x: Int, override val y: Int) extends TwoDim
 	// OTHER    -----------------------------
 	
 	/**
+	 * @param other Another position
+	 * @return A sum of these positions
+	 */
+	def +(other: GridPosition) = GridPosition(x + other.x, y + other.y)
+	
+	/**
 	 * @param movement X and Y movement
 	 * @return A moved copy of this position
 	 */
@@ -64,6 +78,12 @@ case class GridPosition(override val x: Int, override val y: Int) extends TwoDim
 	 * @return This position moved by specified amount
 	 */
 	def +[V <: Vector2DLike[V]](movement: V): V = movement + toVector
+	
+	/**
+	 * @param other Another grid position
+	 * @return A subtraction of these grid positions
+	 */
+	def -(other: GridPosition) = GridPosition(x - other.x, y - other.y)
 	
 	/**
 	 * @param movement X and Y movement

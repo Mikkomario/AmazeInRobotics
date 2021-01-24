@@ -6,10 +6,8 @@ import controller.GlobalBotSettings._
 import utopia.flow.caching.multi.Cache
 import utopia.flow.util.CollectionExtensions._
 import utopia.flow.util.TimeExtensions._
-import utopia.genesis.handling.Drawable
 import utopia.genesis.shape.shape2D.{Bounds, Direction2D}
 import utopia.genesis.util.Drawer
-import utopia.inception.handling.immutable.Handleable
 
 import java.time.Instant
 
@@ -31,7 +29,7 @@ object MapMemory
  * @since 24.1.2021, v1
  */
 case class MapMemory(base: BaseMapMemory, temporariesData: Map[GridPosition, (TemporarySquare, Instant)])
-	extends Drawable with Handleable
+	extends MapMemoryLike[Square]
 {
 	// ATTRIBUTES   ------------------------------
 	
@@ -63,10 +61,26 @@ case class MapMemory(base: BaseMapMemory, temporariesData: Map[GridPosition, (Te
 	
 	// IMPLEMENTED  -------------------------------
 	
-	override def draw(drawer: Drawer) =
+	override def apply(position: GridPosition) =
+		MapSquare(position, squareTypeAt(position), this)
+	
+	override def squareTypeAt(position: GridPosition) = temporariesData.get(position).map { _._1 }
+		.orElse(base.squareTypeAt(position))
+	
+	override def isDefined(position: GridPosition) = temporariesData.contains(position) || base.isDefined(position)
+	
+	
+	// OTHER    -----------------------------------
+	
+	/**
+	 * Draws this map data
+	 * @param drawer Drawer that will perform the drawing functions
+	 * @param zeroCoordinateLocation Grid location of the (0,0) coordinate in this data
+	 */
+	def draw(drawer: Drawer, zeroCoordinateLocation: GridPosition) =
 	{
 		// Draws all memorized locations
-		base.draw(drawer)
+		base.draw(drawer, zeroCoordinateLocation)
 		// And all temporary memory locations
 		val now = Instant.now()
 		val drawers = Cache[TemporarySquare, Drawer] { s => drawer.onlyFill(s.color) }
@@ -74,11 +88,10 @@ case class MapMemory(base: BaseMapMemory, temporariesData: Map[GridPosition, (Te
 			val passedDuration = now - time
 			val visibility = 1.0 - passedDuration / square.visibilityDuration
 			if (visibility > 0)
-				drawers(square).withAlpha(visibility).draw(Bounds(position * pixelsPerGridUnit, gridSquarePixelSize))
+				drawers(square).withAlpha(visibility).draw(
+					Bounds((position + zeroCoordinateLocation) * pixelsPerGridUnit, gridSquarePixelSize))
 		}
 	}
-	
-	// OTHER    -----------------------------------
 	
 	/**
 	 * @param newLocation New bot location
@@ -145,11 +158,24 @@ case class MapMemory(base: BaseMapMemory, temporariesData: Map[GridPosition, (Te
 	 * @return The best route to grab a treasure, if one is available. Contains route (1), grab direction (2)
 	 *         and last known treasure time (3)
 	 */
-	def calculateBestTreasureRoute(costFunction: (Vector[Direction2D], Direction2D) => Double)
+	def calculateBestTreasureRoute(costFunction: (MapRoute[PermanentSquare], Direction2D) => Double)
 	                              (rewardFunction: Instant => Double) =
 		treasureRoutes.maxByOption { case (route, direction, time) =>
 			rewardFunction(time) - costFunction(route, direction)
 		}
+	
+	/**
+	 * Calculates the best available treasure route
+	 * @param currentHeading Current robot head direction
+	 * @return The best treasure route to target. None if there were no treasures spotted.
+	 */
+	def bestTreasureRoute(currentHeading: Direction2D) =
+	{
+		val routesByLength = treasureRoutes.toMultiMap { route => route._1.actualTravelDistance -> route }
+		routesByLength.keys.minOption.map { shortestLength =>
+			routesByLength(shortestLength).bestMatch(Vector(_._2 == currentHeading)).maxBy { _._3 }
+		}
+	}
 	
 	private def withBase(newBase: BaseMapMemory) = if (newBase != base) copy(base = newBase) else this
 }

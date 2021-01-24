@@ -1,10 +1,14 @@
 package controller
 
-import robots.model.enumeration.RobotCommand
-import robots.model.enumeration.RobotCommand.MoveTowards
+import robots.model.{GridPosition, MapRoute}
+import robots.model.enumeration.{PermanentSquare, RobotCommand, ScanType}
+import robots.model.enumeration.RobotCommand.{Collect, MoveTowards, RotateHead}
+import utopia.flow.async.AsyncExtensions._
+import utopia.genesis.shape.shape1D.RotationDirection
+import utopia.genesis.shape.shape1D.RotationDirection.Clockwise
 import utopia.genesis.shape.shape2D.Direction2D
 
-import scala.concurrent.ExecutionContext
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
  * An interface that is provided for use in bot controls
@@ -33,13 +37,13 @@ class BotCommandInterface(bot: Bot)
 	def nextIdleFuture(implicit exc: ExecutionContext) = bot.nextIdleFuture
 	
 	/**
-	 * @return This bot's approximate coordinate in the world. Contains the full current movement vector.
+	 * @return This bot's position, relative to its starting location
 	 */
-	def position = bot.worldGridPosition
+	def position = bot.relativeGridPositionPointer.value
 	/**
-	 * A pointer to this bot's position on the grid
+	 * A pointer to this bot's position, relative to its starting position
 	 */
-	def positionPointer = bot.worldGridPositionPointer
+	def positionPointer = bot.relativeGridPositionPointer
 	
 	/**
 	 * @return The direction towards which this bot is currently moving. None if not currently moving.
@@ -128,10 +132,18 @@ class BotCommandInterface(bot: Bot)
 	def abortAllQueuedCommands() = bot.abortAllQueuedCommands()
 	
 	/**
+	 * Moves this bot towards specified direction
 	 * @param direction Movement direction
 	 * @return Future when that movement is complete. Contains false if movement failed or was cancelled.
 	 */
 	def moveTowards(direction: Direction2D) = accept(MoveTowards(direction))
+	
+	/**
+	 * Moves this bot towards specified direction. Blocks until complete.
+	 * @param direction Direction towards which this bot is moved
+	 * @return Whether the movement was successfully completed
+	 */
+	def moveTowardsBlocking(direction: Direction2D) = moveTowards(direction).waitFor().getOrElse(false)
 	
 	/**
 	 * @param route A movement route
@@ -139,5 +151,127 @@ class BotCommandInterface(bot: Bot)
 	 */
 	def takeRoute(route: Seq[Direction2D]) = accept(route.map(MoveTowards))
 	
-	// TODO: Add more utility command methods
+	/**
+	 * @param route A movement route
+	 * @return Future when the whole movement is complete. Contains false if movement was interrupted.
+	 */
+	def takeRoute(route: MapRoute[_]): Future[Boolean] = takeRoute(route.directions)
+	
+	/**
+	 * Moves this bot along the specified route. Blocks.
+	 * @param route A movement route
+	 * @return Whether the whole movement completed successfully.
+	 */
+	def takeRouteBlocking(route: MapRoute[_]) = takeRoute(route).waitFor().getOrElse(false)
+	
+	/**
+	 * Moves to the specified position
+	 * @param position Target position
+	 * @return Future that completes with true when movement completes or completes with false when movement fails.
+	 *         Immediately returns false if no path could be calculated to the destination.
+	 */
+	def moveTo(position: GridPosition) =
+		moveToOptimized(position) { _.minByOption { _.actualTravelDistance } }
+	
+	/**
+	 * Moves to the specified position
+	 * @param position Target position
+	 * @param selectRoute A function for selecting the route to use
+	 * @return Future that completes with true when movement completes or completes with false when movement fails.
+	 *         Immediately returns false if no path could be calculated to the destination.
+	 */
+	def moveToOptimized(position: GridPosition)(selectRoute: Set[MapRoute[PermanentSquare]] => Option[MapRoute[_]]) =
+		selectRoute(memory.base.routesTo(position)) match
+		{
+			case Some(route) => takeRoute(route)
+			case None => Future.successful(false)
+		}
+	
+	/**
+	 * Commands to issue for rotating the robot head towards the specified direction
+	 * @param targetDirection Targeted robot head direction
+	 * @return Commands to issue to this robot
+	 */
+	def headRotationCommands(targetDirection: Direction2D) =
+	{
+		val current = heading
+		if (current == targetDirection)
+			Vector()
+		else if (current.opposite == targetDirection)
+			Vector(RotateHead(Clockwise), RotateHead(Clockwise))
+		else
+			RotationDirection.values.find { current.rotatedQuarterTowards(_) == targetDirection }
+				.map(RotateHead).toVector
+	}
+	
+	/**
+	 * Makes this bot head the specified direction. May return immediately if already facing the specified direction.
+	 * @param direction Direction to face.
+	 * @return A future that will complete when this bot's head has rotated. Contains false if rotation failed.
+	 */
+	def pointHeadTowards(direction: Direction2D) = accept(headRotationCommands(direction))
+	
+	/**
+	 * Makes this bot face the specified direction. Blocks.
+	 * @param direction Direction to face
+	 * @return Whether this bot successfully changed direction
+	 */
+	def pointHeadTowardsBlocking(direction: Direction2D) =
+		pointHeadTowards(direction).waitFor().getOrElse(false)
+	
+	/**
+	 * Makes this bot head the specified direction. May return immediately if already facing the specified direction.
+	 * @param direction Direction to face.
+	 * @param additionalCommands Commands to execute after successful head rotation
+	 * @return A future that will complete when this bot's head has rotated and additional commands have been
+	 *         performed. Contains false if rotation or additional action failed.
+	 */
+	def pointHeadTowardsAndThen(direction: Direction2D, additionalCommands: Seq[RobotCommand]) =
+		accept(headRotationCommands(direction) ++ additionalCommands)
+	
+	/**
+	 * Makes this bot head the specified direction. May return immediately if already facing the specified direction.
+	 * @param direction Direction to face.
+	 * @param action Action to perform once the head has been aligned
+	 * @return A future that will complete when this bot's head has rotated and additional commands have been
+	 *         performed. Contains false if rotation or additional action failed.
+	 */
+	def pointHeadTowardsAndThen(direction: Direction2D, action: RobotCommand): Future[Boolean] =
+		accept(headRotationCommands(direction) :+ action)
+	
+	/**
+	 * Scans towards the specified direction using the specified scan method
+	 * @param direction Direction of scan
+	 * @param scanType Type of scan
+	 * @return A future that will complete once the scan has completed.
+	 *         Contains failure if the command was cancelled or aborted.
+	 */
+	def scanTowards(direction: Direction2D, scanType: ScanType) =
+		pointHeadTowardsAndThen(direction, scanType.toCommand)
+	
+	/**
+	 * Attempts to collect treasure nearby
+	 * @return A future that completes once the collection has finished. None if there was no treasure to collect.
+	 */
+	def tryCollectNearestTreasure() = memory.bestTreasureRoute(heading)
+		.map { case (route, direction, _) =>
+			accept(route.directions.map(MoveTowards) ++ headRotationCommands(direction) :+ Collect )
+		}
+	
+	/**
+	 * Attempts to collect treasure nearby
+	 * @return A future that completes once the collection has finished. Contains failure if collection failed.
+	 */
+	def collectNearestTreasure() = tryCollectNearestTreasure().getOrElse(Future.successful(false))
+	
+	/**
+	 * Collects nearest treasure, if there is any. Blocks.
+	 * @return Whether treasure collection succeeded. False if there was no treasure to collect or if the completion
+	 *         failed otherwise.
+	 */
+	def collectNearestTreasureBlocking() = tryCollectNearestTreasure() match
+	{
+		case Some(future) => future.waitFor().getOrElse(false)
+		case None => false
+	}
 }

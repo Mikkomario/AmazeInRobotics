@@ -2,6 +2,7 @@ package robots.model
 
 import robots.model.enumeration.{PermanentSquare, Square}
 import utopia.flow.util.CollectionExtensions._
+import utopia.genesis.shape.shape2D.TwoDimensional
 
 object BaseGrid
 {
@@ -37,7 +38,7 @@ case class BaseGrid(data: Vector[Vector[PermanentSquare]]) extends GridLike[Perm
 	val height = data.map { _.size }.min
 	
 	
-	// OTHER    --------------------------
+	// IMPLEMENTED  ---------------------
 	
 	/**
 	 * @param row Row index
@@ -47,6 +48,12 @@ case class BaseGrid(data: Vector[Vector[PermanentSquare]]) extends GridLike[Perm
 	 */
 	@throws[IndexOutOfBoundsException]("If targeting square outside of this grid")
 	def apply(row: Int, column: Int) = data(row)(column)
+	
+	override def contains(position: TwoDimensional[Int]) = position.x >= 0 && position.y >= 0 &&
+		position.x < width && position.y < height
+	
+	
+	// OTHER    --------------------------
 	
 	/**
 	 * Updates a number of squares in this grid

@@ -1,6 +1,7 @@
 package view
 
 import controller.{Bot, GlobalBotSettings, ManualBotControl, MapReader, World}
+import robots.model.BotColors
 import utopia.flow.async.ThreadPool
 import utopia.flow.util.FileExtensions._
 import utopia.genesis.color.Color
@@ -25,7 +26,7 @@ object AmazeInRobotsApp extends App
 	val world = new World(map, treasureLocations)
 	val random = new Random()
 	val bot = new Bot(world, botStartLocations(random.nextInt(botStartLocations.size)), Up,
-		Color.red.timesLuminosity(0.66), Color.red, Color.cyan.withAlpha(0.66))
+		BotColors(Color.red.timesLuminosity(0.66), Color.red, Color.cyan.withAlpha(0.66)))
 	val controller = new ManualBotControl(bot)
 	
 	world.registerBot(bot)

@@ -1,16 +1,14 @@
 package robots.model
 
 import robots.model.enumeration.PermanentSquare
-import robots.model.enumeration.RobotCommand.{LinearScan, MiniScan, WideScan}
 import controller.GlobalBotSettings._
+import robots.model.enumeration.ScanType.{Linear, Mini, Wide}
 import utopia.flow.caching.multi.Cache
 import utopia.flow.datastructure.immutable.Graph
 import utopia.flow.datastructure.immutable.Graph.GraphViewNode
 import utopia.flow.util.CollectionExtensions._
-import utopia.genesis.handling.Drawable
 import utopia.genesis.shape.shape2D.{Bounds, Direction2D}
 import utopia.genesis.util.Drawer
-import utopia.inception.handling.immutable.Handleable
 
 import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
@@ -21,7 +19,7 @@ import scala.collection.immutable.VectorBuilder
  * @since 24.1.2021, v1
  */
 case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, PermanentSquare])
-	extends Drawable with Handleable
+	extends MapMemoryLike[PermanentSquare]
 {
 	// ATTRIBUTES   ---------------------------
 	
@@ -77,18 +75,30 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	}
 	
 	
-	// IMPLEMENTED  ---------------------------
+	// IMPLEMENTED  --------------------------
 	
-	override def draw(drawer: Drawer) =
-	{
-		val drawers = Cache[PermanentSquare, Drawer] { s => drawer.onlyFill(s.color) }
-		data.foreach { case (position, square) =>
-			drawers(square).draw(Bounds(position * pixelsPerGridUnit, gridSquarePixelSize))
-		}
-	}
+	override def apply(position: GridPosition) =
+		MapSquare(position, data.get(position), this)
+	
+	override def squareTypeAt(position: GridPosition) = data.get(position)
+	
+	override def isDefined(position: GridPosition) = data.contains(position)
 	
 	
 	// OTHER   -------------------------------
+	
+	/**
+	 * Draws this map data
+	 * @param drawer Drawer to perform the drawing
+	 * @param zeroCoordinateLocation Grid coordinates of the (0,0) instance in this data
+	 */
+	def draw(drawer: Drawer, zeroCoordinateLocation: GridPosition) =
+	{
+		val drawers = Cache[PermanentSquare, Drawer] { s => drawer.onlyFill(s.color) }
+		data.foreach { case (position, square) =>
+			drawers(square).draw(Bounds((position + zeroCoordinateLocation) * pixelsPerGridUnit, gridSquarePixelSize))
+		}
+	}
 	
 	/**
 	 * @param newLocation New known bot location
@@ -137,7 +147,7 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	 * @param position A grid position
 	 * @return All known routes to from the current bot location to that position
 	 */
-	def routesTo(position: GridPosition): Set[Vector[Direction2D]] = routesTo(graph(position))
+	def routesTo(position: GridPosition): Set[MapRoute[PermanentSquare]] = routesTo(graph(position))
 	
 	/**
 	 * @param node A graph node
@@ -146,9 +156,11 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	def routesTo(node: GraphViewNode[GridPosition, Direction2D]) =
 	{
 		if (node == originNode)
-			Set(Vector[Direction2D]())
+			Set(MapRoute.empty(botLocation, this))
 		else
-			originNode.routesTo(node).map { _.map { _.content } }
+			originNode.routesTo(node).map { route =>
+				MapRoute(botLocation +: route.map { _.end.content }, route.map { _.content }, this)
+			}
 	}
 	
 	/**
@@ -174,7 +186,7 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	 * @param costFunction A function for calculating the cost of a route + scan direction combination
 	 * @return The best mini scan option cost-wise (lowest cost)
 	 */
-	def calculateBestMiniScan(costFunction: (Vector[Direction2D], Direction2D) => Double) =
+	def calculateBestMiniScan(costFunction: (MapRoute[PermanentSquare], Direction2D) => Double) =
 		miniScanRoutes.minByOption { case (route, dir) => costFunction(route, dir) }
 	
 	/**
@@ -182,7 +194,7 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	 * @param costFunction A function for calculating the cost of a route + scan direction combination
 	 * @return The best linear scan option cost-wise (lowest cost)
 	 */
-	def calculateBestLinearScan(costFunction: (Vector[Direction2D], Direction2D) => Double) =
+	def calculateBestLinearScan(costFunction: (MapRoute[PermanentSquare], Direction2D) => Double) =
 		linearScanRoutes.minByOption { case (route, direction) => costFunction(route, direction) }
 	
 	/**
@@ -192,7 +204,7 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	 *                       boolean indicating whether there may be more squares uncovered.
 	 * @return The best wide scan option rewards and cost-wise
 	 */
-	def calculateBestWideScan(costFunction: (Vector[Direction2D], Direction2D) => Double)
+	def calculateBestWideScan(costFunction: (MapRoute[PermanentSquare], Direction2D) => Double)
 	                         (rewardFunction: (Set[GridPosition], Boolean) => Double) =
 		wideScanOptions.maxByOption { case (route, dir, known, more) =>
 			rewardFunction(known, more) - costFunction(route, dir)
@@ -209,7 +221,7 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	 */
 	def calculateBestScan(miniScanReward: Double, linearScanReward: Double)
 	                     (wideRewardFunction: (Set[GridPosition], Boolean) => Double)
-	                     (costFunction: (Vector[Direction2D], Direction2D) => Double) =
+	                     (costFunction: (MapRoute[PermanentSquare], Direction2D) => Double) =
 	{
 		// Calculates costs / rewards for each option
 		val miniScansWithRewards = miniScanRoutes.map { case (route, dir) => (route -> dir) -> (
@@ -220,27 +232,27 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 			wideRewardFunction(minResults, open) - costFunction(route, dir))
 		}
 		// Selects the best option
-		(miniScansWithRewards.view.map { _ -> MiniScan } ++ linearScansWithRewards.view.map { _ -> LinearScan } ++
-			wideScansWithRewards.view.map { _ -> WideScan }).maxByOption { _._1._2 }
+		(miniScansWithRewards.view.map { _ -> Mini } ++ linearScansWithRewards.view.map { _ -> Linear } ++
+			wideScansWithRewards.view.map { _ -> Wide }).maxByOption { _._1._2 }
 			.map { case (((route, dir), _), scanType) => (route, dir, scanType) }
 	}
 	
-	private def bestRouteFrom(routes: Iterable[(Vector[Direction2D], Direction2D)], currentHeading: Direction2D,
+	private def bestRouteFrom(routes: Iterable[(MapRoute[PermanentSquare], Direction2D)], currentHeading: Direction2D,
 	                          preferredMovementDirection: Direction2D) =
 	{
 		routes.bestMatch(Vector(
 			_._2 == currentHeading,
-			_._1.head == preferredMovementDirection
-		)).headOption
+			_._1.directions.headOption.forall { _ == preferredMovementDirection }
+		)).maxByOption { _._1.directions.count { _ == preferredMovementDirection } }
 	}
 	
-	private def bestRoutesFrom(routes: Set[(Vector[Direction2D], Direction2D)]) =
+	private def bestRoutesFrom(routes: Set[(MapRoute[PermanentSquare], Direction2D)]) =
 	{
-		val routesWithLengths = routes.toMultiMap { route => route._1.size -> route }
+		val routesWithLengths = routes.toMultiMap { route => route._1.actualTravelDistance -> route }
 		routesWithLengths.keys.minOption match
 		{
 			case Some(shortestLength) => routesWithLengths(shortestLength)
-			case None => Set[(Vector[Direction2D], Direction2D)]()
+			case None => Set[(MapRoute[PermanentSquare], Direction2D)]()
 		}
 	}
 	

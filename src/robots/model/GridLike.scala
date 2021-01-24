@@ -15,15 +15,6 @@ trait GridLike[+A <: Square]
 	// ABSTRACT --------------------------
 	
 	/**
-	 * The width of this grid in squares
-	 */
-	def width: Int
-	/**
-	 * The height of this grid in squares
-	 */
-	def height: Int
-	
-	/**
 	 * @param row Row index
 	 * @param column Column index
 	 * @return Type of square at that position
@@ -32,15 +23,14 @@ trait GridLike[+A <: Square]
 	@throws[IndexOutOfBoundsException]("If targeting square outside of this grid")
 	def apply(row: Int, column: Int): A
 	
-	
-	// OTHER    --------------------------
-	
 	/**
 	 * @param position A position
 	 * @return Whether this grid contains that position
 	 */
-	def contains(position: TwoDimensional[Int]) = position.x >= 0 && position.x < width &&
-		position.y >= 0 && position.y < height
+	def contains(position: TwoDimensional[Int]): Boolean
+	
+	
+	// OTHER    --------------------------
 	
 	/**
 	 * @param position Grid position
