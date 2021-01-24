@@ -2,7 +2,7 @@ package robots.model.enumeration
 
 import utopia.genesis.shape.shape2D.Direction2D
 import controller.GlobalBotSettings._
-import robots.model.enumeration.RobotCommandType.{HeadRotation, Movement, Scan}
+import robots.model.enumeration.RobotCommandType.{HeadRotation, Interact, Movement, Scan}
 import utopia.genesis.shape.shape1D.RotationDirection
 
 import scala.concurrent.duration.Duration
@@ -95,6 +95,9 @@ object RobotCommand
 		override def name = "Scan (mini)"
 	}
 	
+	/**
+	 * Scans a line of blocks, and also blocks adjacent to those blocks
+	 */
 	case object WideScan extends RobotCommand
 	{
 		override val duration = defaultScanDuration * 2.5
@@ -102,5 +105,17 @@ object RobotCommand
 		override def commandType = Scan
 		
 		override def name = "Scan (wide)"
+	}
+	
+	/**
+	 * Collects items, like treasure
+	 */
+	case object Collect extends RobotCommand
+	{
+		override def commandType = Interact
+		
+		override def name = "Collect"
+		
+		override def duration = defaultInteractDuration
 	}
 }

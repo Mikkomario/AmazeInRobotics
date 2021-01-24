@@ -1,7 +1,7 @@
 package controller
 
 import robots.model.enumeration.RelativeDirection.{Backward, Forward}
-import robots.model.enumeration.RobotCommand.{LinearScan, MiniScan, Move, MoveTowards, RotateHead, WideScan}
+import robots.model.enumeration.RobotCommand.{Collect, LinearScan, MiniScan, Move, MoveTowards, RotateHead, WideScan}
 import utopia.genesis.event.KeyStateEvent
 import utopia.genesis.handling.KeyStateListener
 import utopia.genesis.shape.shape1D.RotationDirection.{Clockwise, Counterclockwise}
@@ -20,7 +20,7 @@ class ManualBotControl(bot: Bot) extends KeyStateListener
 	
 	override def keyStateEventFilter =
 		KeyStateEvent.wasPressedFilter && (KeyStateEvent.arrowKeysFilter ||
-			KeyStateEvent.keysFilter(KeyEvent.VK_SPACE, KeyEvent.VK_D, KeyEvent.VK_W))
+			KeyStateEvent.keysFilter(KeyEvent.VK_SPACE, KeyEvent.VK_D, KeyEvent.VK_W, KeyEvent.VK_C))
 	
 	
 	// IMPLEMENTED  -----------------------------
@@ -32,6 +32,7 @@ class ManualBotControl(bot: Bot) extends KeyStateListener
 			case KeyEvent.VK_SPACE => bot.push(LinearScan)
 			case KeyEvent.VK_D => bot.push(MiniScan)
 			case KeyEvent.VK_W => bot.push(WideScan)
+			case KeyEvent.VK_C => bot.push(Collect)
 			case _ =>
 				event.arrow.foreach { arrow =>
 					val command =

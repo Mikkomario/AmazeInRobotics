@@ -16,6 +16,11 @@ object GlobalBotSettings
 	val pixelsPerGridUnit = 48
 	
 	/**
+	 * Pixel-wise size of a single grid square
+	 */
+	val gridSquarePixelSize = Size(pixelsPerGridUnit, pixelsPerGridUnit)
+	
+	/**
 	 * How long a bot is stunned by default
 	 */
 	val defaultStunDuration = 1.seconds
@@ -36,7 +41,7 @@ object GlobalBotSettings
 	val defaultScanDuration = 0.75.seconds
 	
 	/**
-	 * Pixel-wise size of a single grid square
+	 * How long it takes to interact with the environment by default
 	 */
-	val gridSquarePixelSize = Size(pixelsPerGridUnit, pixelsPerGridUnit)
+	val defaultInteractDuration = 0.25.seconds
 }

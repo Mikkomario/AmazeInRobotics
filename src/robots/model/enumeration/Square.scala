@@ -78,7 +78,7 @@ object Square
 	{
 		override val color = Color.red
 		
-		override val visibilityDuration = 2.seconds
+		override val visibilityDuration = 4.seconds
 		
 		override def isPassable = false
 		
@@ -90,7 +90,7 @@ object Square
 	 */
 	object TreasureLocation extends TemporarySquare
 	{
-		override val visibilityDuration = 25.seconds
+		override val visibilityDuration = 35.seconds
 		
 		override def color = Color.red.average(Color.yellow).withLuminosity(0.7)
 		

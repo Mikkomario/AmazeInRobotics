@@ -2,7 +2,8 @@ package controller
 
 import robots.model.{BaseGrid, GridPosition}
 import robots.model.enumeration.Square.{BotLocation, TreasureLocation}
-import utopia.flow.datastructure.mutable.{PointerWithEvents, ResettableLazy}
+import utopia.flow.collection.VolatileList
+import utopia.flow.datastructure.mutable.ResettableLazy
 import utopia.flow.event.ChangeListener
 
 /**
@@ -16,9 +17,9 @@ class World(val base: BaseGrid, treasures: Vector[GridPosition])
 	
 	private var bots = Vector[Bot]()
 	
-	private val remainingTreasuresPointer = new PointerWithEvents(treasures)
+	private val remainingTreasuresPointer = VolatileList(treasures)
 	private val worldStatePointer = ResettableLazy { base ++
-		(treasures.map { _ -> TreasureLocation } ++ bots.map { _.gridPosition -> BotLocation }) }
+		(remainingTreasuresPointer.value.map { _ -> TreasureLocation } ++ bots.map { _.gridPosition -> BotLocation }) }
 	
 	private val resetWorldStateListener = ChangeListener.onAnyChange { worldStatePointer.reset() }
 	
@@ -48,4 +49,11 @@ class World(val base: BaseGrid, treasures: Vector[GridPosition])
 		bots :+= bot
 		bot.worldGridPositionPointer.addListener(resetWorldStateListener)
 	}
+	
+	/**
+	 * @param position Position from which treasure is collected
+	 * @return Whether there was any treasure to collect there
+	 */
+	def tryCollectTreasureFrom(position: GridPosition) =
+		remainingTreasuresPointer.popFirst { _ == position }.nonEmpty
 }

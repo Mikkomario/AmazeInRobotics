@@ -1,7 +1,6 @@
 package view
 
 import controller.{Bot, GlobalBotSettings, ManualBotControl, MapReader, World}
-import robots.model.GridPosition
 import utopia.flow.async.ThreadPool
 import utopia.flow.util.FileExtensions._
 import utopia.genesis.color.Color
@@ -11,6 +10,7 @@ import utopia.genesis.util.DefaultSetup
 import utopia.genesis.view.GlobalKeyboardEventHandler
 
 import scala.concurrent.ExecutionContext
+import scala.util.Random
 
 /**
  * The main application for this project
@@ -21,10 +21,11 @@ object AmazeInRobotsApp extends App
 {
 	implicit val exc: ExecutionContext = new ThreadPool("AmazeInRobots").executionContext
 	
-	val map = MapReader("test-data/test-map-1.txt").get
-	val world = new World(map, Vector()) // TODO: Read treasure locations (and bot start locations) from map and assign here
-	val bot = new Bot(world, GridPosition(5, 5), Up, Color.red.timesLuminosity(0.66), Color.red,
-		Color.cyan.withAlpha(0.66))
+	val (map, treasureLocations, botStartLocations) = MapReader("test-data/test-map-1.txt").get
+	val world = new World(map, treasureLocations)
+	val random = new Random()
+	val bot = new Bot(world, botStartLocations(random.nextInt(botStartLocations.size)), Up,
+		Color.red.timesLuminosity(0.66), Color.red, Color.cyan.withAlpha(0.66))
 	val controller = new ManualBotControl(bot)
 	
 	world.registerBot(bot)

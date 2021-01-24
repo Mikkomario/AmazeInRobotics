@@ -23,4 +23,9 @@ object RobotCommandType
 	 * Command type for scanning features
 	 */
 	case object Scan extends RobotCommandType
+	
+	/**
+	 * Command type for commands which interact with the environment
+	 */
+	case object Interact extends RobotCommandType
 }

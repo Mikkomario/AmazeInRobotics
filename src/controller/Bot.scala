@@ -2,14 +2,16 @@ package controller
 
 import controller.GlobalBotSettings._
 import robots.model.GridPosition
-import robots.model.enumeration.{PermanentSquare, RobotCommand, TemporarySquare}
+import robots.model.enumeration.{PermanentSquare, RobotCommand, Square, TemporarySquare}
 import robots.model.enumeration.RobotCommand.{LinearScan, MiniScan, Move, MoveTowards, RotateHead, WideScan}
-import robots.model.enumeration.RobotCommandType.{HeadRotation, Movement, Scan}
-import robots.model.enumeration.Square.Empty
+import robots.model.enumeration.RobotCommandType.{HeadRotation, Interact, Movement, Scan}
+import robots.model.enumeration.Square.{Empty, TreasureLocation}
 import utopia.flow.async.VolatileOption
+import utopia.flow.caching.multi.Cache
 import utopia.flow.collection.VolatileList
 import utopia.flow.datastructure.mutable.PointerWithEvents
 import utopia.flow.util.CollectionExtensions._
+import utopia.flow.util.TimeExtensions._
 import utopia.genesis.animation.Animation
 import utopia.genesis.color.Color
 import utopia.genesis.handling.{Actor, Drawable}
@@ -61,6 +63,9 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	private var temporariesMemory: Map[GridPosition, (TemporarySquare, Instant)] = HashMap()
 	
 	private var currentScanShape: Option[Shape] = None
+	
+	// How many treasures this bot has collected
+	private var collectedTreasureCount = 0
 	
 	/**
 	 * A pointer that contains whether this bot is currently idle (without anything to do)
@@ -268,6 +273,7 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 		case LinearScan => startLinearScan()
 		case MiniScan => startMiniScan()
 		case WideScan => startWideScan()
+		case _ => ()
 	}
 	
 	private def finish(command: RobotCommand) = command.commandType match
@@ -323,6 +329,17 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 					temporariesMemory ++= temporaryUpdates
 				case _ => ()
 			}
+		case Interact =>
+			// Checks whether there is treasure directly ahead of this bot, if so, collects it
+			val targetPosition = gridPosition + heading
+			if (world.tryCollectTreasureFrom(targetPosition))
+			{
+				collectedTreasureCount += 1
+				println(s"Treasure collected, now $collectedTreasureCount")
+			}
+			// Updates memory afterwards
+			if (temporariesMemory.get(targetPosition).exists { _._1 == TreasureLocation })
+				temporariesMemory -= targetPosition
 	}
 	
 	private def startMovingTowards(direction: Direction2D) =
@@ -405,9 +422,17 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 		override def draw(drawer: Drawer) =
 		{
 			// Draws all memorized locations
-			val drawers = PermanentSquare.values.map { s => s -> drawer.onlyFill(s.color) }.toMap
+			val drawers = Cache[Square, Drawer] { s => drawer.onlyFill(s.color) }
 			knownMap.foreach { case (position, square) =>
 				drawers(square).draw(Bounds(position * pixelsPerGridUnit, gridSquarePixelSize))
+			}
+			// And all temporary memory locations
+			val now = Instant.now()
+			temporariesMemory.foreach { case (position, (square, time)) =>
+				val passedDuration = now - time
+				val visibility = 1.0 - passedDuration / square.visibilityDuration
+				if (visibility > 0)
+					drawers(square).withAlpha(visibility).draw(Bounds(position * pixelsPerGridUnit, gridSquarePixelSize))
 			}
 		}
 	}
