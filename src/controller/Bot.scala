@@ -2,9 +2,10 @@ package controller
 
 import controller.GlobalBotSettings._
 import robots.model.{GridPosition, MapMemory}
-import robots.model.enumeration.RobotCommand
+import robots.model.enumeration.{RobotCommand, StunCause}
 import robots.model.enumeration.RobotCommand.{LinearScan, MiniScan, Move, MoveTowards, RotateHead, WideScan}
 import robots.model.enumeration.RobotCommandType.{HeadRotation, Interact, Movement, Scan}
+import robots.model.enumeration.StunCause.MovementCollision
 import utopia.flow.async.VolatileOption
 import utopia.flow.collection.VolatileList
 import utopia.flow.datastructure.mutable.PointerWithEvents
@@ -51,7 +52,7 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	
 	private val _currentMovementDirectionPointer = new PointerWithEvents[Option[Direction2D]](None)
 	
-	private var heading = initialHeading
+	private val _headingPointer = new PointerWithEvents(initialHeading)
 	private var currentRotationDirection: Option[RotationDirection] = None
 	
 	private val baseHeadTriangle = Triangle(Point.origin, Vector2D(-pixelsPerGridUnit / 2.0, -pixelsPerGridUnit / 2.0),
@@ -85,13 +86,38 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	// COMPUTED ----------------------------
 	
 	/**
-	 * @return This bot's approximate coordinate in the world
+	 * @return The current memory state of this bot
+	 */
+	def memory = _memoryPointer.value
+	/**
+	 * @return A pointer to this bot's memory / data state
+	 */
+	def memoryPointer = _memoryPointer.view
+	
+	/**
+	 * @return This bot's current heading (head direction)
+	 */
+	def heading = _headingPointer.value
+	/**
+	 * @return A pointer to this bot's current heading (head direction)
+	 */
+	def headingPointer = _headingPointer.view
+	
+	/**
+	 * @return This bot's approximate coordinate in the world. Contains the full current movement vector.
 	 */
 	def worldGridPosition = worldGridPositionPointer.value
 	
 	private def gridPosition = _memoryPointer.value.botLocation
 	// private def gridPosition_=(newPosition: GridPosition) = _memoryPointer.update { _.withBotLocation(newPosition) }
 	
+	/**
+	 * @return A pointer to this bot's current movement direction. Contains None while this bot is not moving.
+	 */
+	def currentMovementDirectionPointer = _currentMovementDirectionPointer.view
+	/**
+	 * @return The direction towards which this bot is currently moving. None if not currently moving.
+	 */
 	def currentMovementDirection = _currentMovementDirectionPointer.value
 	private def currentMovementDirection_=(newDirection: Option[Direction2D]) =
 		_currentMovementDirectionPointer.value = newDirection
@@ -100,12 +126,10 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	 * @return Whether this robot is currently fulfilling a command
 	 */
 	def isBusy = !isIdle
-	
 	/**
 	 * @return Whether this bot is currently idle (not fulfilling a command)
 	 */
 	def isIdle = isIdlePointer.value
-	
 	/**
 	 * @return A future when this bot is idle next time. Completed future if this bot is already idle.
 	 */
@@ -282,10 +306,10 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 		aborted.size
 	}
 	
-	private def stun() =
+	private def stun(cause: StunCause) =
 	{
 		remainingStun = 1.0
-		stunListeners.foreach { _.onBotStunned() }
+		stunListeners.foreach { _.onBotStunned(cause) }
 	}
 	
 	private def start(command: RobotCommand) = command match
@@ -309,7 +333,7 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 			}
 			currentMovementDirection = None
 		case HeadRotation =>
-			currentRotationDirection.foreach { direction => heading = heading.rotatedQuarterTowards(direction) }
+			currentRotationDirection.foreach { direction => _headingPointer.update { _.rotatedQuarterTowards(direction) } }
 			currentRotationDirection = None
 		case Scan =>
 			currentScanShape = None
@@ -350,8 +374,8 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 		// Otherwise aborts the action and stuns
 		else
 		{
-			_currentCommandPointer.clear()
-			stun()
+			_currentCommandPointer.pop().foreach { _._2.foreach { _.success(false) } }
+			stun(MovementCollision(direction))
 		}
 	}
 	
