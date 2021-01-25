@@ -76,8 +76,9 @@ case class MapMemory(base: BaseMapMemory, temporariesData: Map[GridPosition, (Te
 	 * Draws this map data
 	 * @param drawer Drawer that will perform the drawing functions
 	 * @param zeroCoordinateLocation Grid location of the (0,0) coordinate in this data
+	 * @param timeSpeedModifier A modifier applied to time (default = 1.0)
 	 */
-	def draw(drawer: Drawer, zeroCoordinateLocation: GridPosition) =
+	def draw(drawer: Drawer, zeroCoordinateLocation: GridPosition, timeSpeedModifier: Double = 1.0) =
 	{
 		// Draws all memorized locations
 		base.draw(drawer, zeroCoordinateLocation)
@@ -85,7 +86,7 @@ case class MapMemory(base: BaseMapMemory, temporariesData: Map[GridPosition, (Te
 		val now = Instant.now()
 		val drawers = Cache[TemporarySquare, Drawer] { s => drawer.onlyFill(s.color) }
 		temporariesData.foreach { case (position, (square, time)) =>
-			val passedDuration = now - time
+			val passedDuration = (now - time) * timeSpeedModifier
 			val visibility = 1.0 - passedDuration / square.visibilityDuration
 			if (visibility > 0)
 				drawers(square).withAlpha(visibility).draw(

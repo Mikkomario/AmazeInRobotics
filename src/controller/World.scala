@@ -11,7 +11,7 @@ import utopia.flow.event.ChangeListener
  * @author Mikko Hilpinen
  * @since 22.1.2021, v1
  */
-class World(val base: BaseGrid, treasures: Vector[GridPosition])
+class World(val base: BaseGrid, treasures: Vector[GridPosition], val speedModifier: Double = 1.0)
 {
 	// ATTRIBUTES   -----------------------------
 	
@@ -24,6 +24,11 @@ class World(val base: BaseGrid, treasures: Vector[GridPosition])
 	}
 	
 	private val resetWorldStateListener = ChangeListener.onAnyChange { worldStatePointer.reset() }
+	
+	/**
+	 * A pointer that will contain true once this competition has finished
+	 */
+	val gameOverPointer = remainingTreasuresPointer.valueView.map { _.isEmpty }
 	
 	
 	// INITIAL CODE -----------------------------

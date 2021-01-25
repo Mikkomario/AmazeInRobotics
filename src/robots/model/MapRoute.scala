@@ -57,6 +57,11 @@ case class MapRoute[+T <: Square](positions: Vector[GridPosition], directions: V
 	def effectiveness = if (directions.isEmpty) 1 else directTravelDistance / (actualTravelDistance: Double)
 	
 	
+	// IMPLEMENTED  ---------------------------
+	
+	override def toString = if (directions.isEmpty) "No Movement" else directions.mkString(" -> ")
+	
+	
 	// OTHER    -------------------------------
 	
 	/**

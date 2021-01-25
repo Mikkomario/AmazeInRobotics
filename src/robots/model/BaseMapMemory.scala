@@ -61,7 +61,7 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	 * 4) Whether there is a possibility to uncover more squares with the scan
 	 */
 	// Goes through each node, checking for possible scan results in any direction
-	lazy val wideScanOptions = graph.nodes.flatMap { node =>
+	lazy val wideScanOptions = graphNodes.flatMap { node =>
 		lazy val routes = routesTo(node)
 		val origin = node.content
 		Direction2D.values.flatMap { direction =>
@@ -73,6 +73,15 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 				None
 		}
 	}
+	
+	
+	// COMPUTED ------------------------------
+	
+	/**
+	 * @return Known graph nodes
+	 */
+	def graphNodes =
+		if (graph.isEmpty) Set(graph(botLocation)) else graph.nodes
 	
 	
 	// IMPLEMENTED  --------------------------
@@ -155,12 +164,14 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	 */
 	def routesTo(node: GraphViewNode[GridPosition, Direction2D]) =
 	{
-		if (node == originNode)
+		if (node.content == originNode.content)
 			Set(MapRoute.empty(botLocation, this))
 		else
+		{
 			originNode.routesTo(node).map { route =>
 				MapRoute(botLocation +: route.map { _.end.content }, route.map { _.content }, this)
 			}
+		}
 	}
 	
 	/**
@@ -225,11 +236,11 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	{
 		// Calculates costs / rewards for each option
 		val miniScansWithRewards = miniScanRoutes.map { case (route, dir) => (route -> dir) -> (
-			miniScanReward - costFunction(route, dir)) }
+			miniScanReward / costFunction(route, dir)) }
 		val linearScansWithRewards = linearScanRoutes.map { case (route, dir) => (route -> dir) -> (
-			linearScanReward - costFunction(route, dir)) }
+			linearScanReward / costFunction(route, dir)) }
 		val wideScansWithRewards = wideScanOptions.map { case (route, dir, minResults, open) => (route -> dir) -> (
-			wideRewardFunction(minResults, open) - costFunction(route, dir))
+			wideRewardFunction(minResults, open) / costFunction(route, dir))
 		}
 		// Selects the best option
 		(miniScansWithRewards.view.map { _ -> Mini } ++ linearScansWithRewards.view.map { _ -> Linear } ++
@@ -257,13 +268,19 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	}
 	
 	private def scanRoutesUsing(scan: GridPosition => IterableOnce[Direction2D]) =
-		graph.nodes.flatMap { node =>
+	{
+		graphNodes.flatMap { node =>
 			lazy val routes = routesTo(node)
 			scan(node.content).iterator.flatMap { direction => routes.map { _ -> direction } }
 		}
+	}
 	
 	private def miniScanDirectionsFrom(position: GridPosition) =
-		Direction2D.values.filter { direction => unknownLocations.contains(position + direction) }
+	{
+		Direction2D.values.filter { direction =>
+			unknownLocations.contains(position + direction)
+		}
+	}
 	
 	private def linearScanDirectionsFrom(position: GridPosition) =
 		Direction2D.values.filter { canLinearScan(position, _) }

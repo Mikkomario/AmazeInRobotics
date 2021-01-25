@@ -198,14 +198,16 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	
 	override def act(duration: FiniteDuration) =
 	{
+		val scaledDuration = duration * world.speedModifier
+		
 		// If currently stunned, decreases the stun before continuing next action
 		if (remainingStun > 0)
-			remainingStun = (remainingStun - duration / defaultStunDuration) max 0.0
+			remainingStun = (remainingStun - scaledDuration / defaultStunDuration) max 0.0
 		else
 			// Chooses the command to advance
 			currentCommand.foreach { case (command, completionPromise) =>
 				// Advances the command completion
-				currentCommandProgress += duration / command.duration
+				currentCommandProgress += scaledDuration / command.duration
 				// Checks whether command should be completed
 				if (currentCommandProgress >= 1)
 				{
@@ -258,7 +260,7 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	def accept(commands: Seq[RobotCommand]) =
 	{
 		if (commands.isEmpty)
-			Future.successful(false)
+			Future.successful(true)
 		else
 		{
 			val completionPromise = Promise[Boolean]()
@@ -448,6 +450,6 @@ class Bot(world: World, initialPosition: GridPosition, initialHeading: Direction
 	object BotWorldDrawer extends Drawable with Handleable
 	{
 		// Delegates drawing
-		override def draw(drawer: Drawer) = _memoryPointer.value.draw(drawer, initialPosition)
+		override def draw(drawer: Drawer) = _memoryPointer.value.draw(drawer, initialPosition, world.speedModifier)
 	}
 }

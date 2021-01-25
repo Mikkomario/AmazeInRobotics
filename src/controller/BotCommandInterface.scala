@@ -126,6 +126,20 @@ class BotCommandInterface(bot: Bot)
 		bot.push(firstCommand, secondCommand, moreCommands: _*)
 	
 	/**
+	 * Executes the specified command. Blocks.
+	 * @param command Command to execute
+	 * @return Whether command succeeded.
+	 */
+	def executeBlocking(command: RobotCommand) = accept(command).waitFor().getOrElse(false)
+	
+	/**
+	 * Executes the specified commands. Blocks.
+	 * @param commands Commands to execute
+	 * @return Whether all the commands succeeded.
+	 */
+	def executeBlocking(commands: Seq[RobotCommand]) = accept(commands).waitFor().getOrElse(false)
+	
+	/**
 	 * Cancels all queued commands
 	 * @return The number of commands that were cancelled
 	 */
