@@ -1,9 +1,8 @@
-package controller
+package robots.controller
 
-import robots.model.{BaseGrid, GridPosition}
+import robots.model.{BaseGrid, GridPosition, WorldMap}
 import robots.model.enumeration.Square.{Empty, Wall}
 import utopia.flow.util.LinesFrom
-import utopia.flow.util.StringExtensions._
 
 import java.nio.file.Path
 import scala.collection.immutable.VectorBuilder
@@ -34,7 +33,7 @@ object MapReader
 				}
 			}
 		}
-		(baseGrid, treasureLocationsBuilder.result(), botLocationsBuilder.result())
+		WorldMap(baseGrid, treasureLocationsBuilder.result().toSet, botLocationsBuilder.result())
 	}
 	
 	private def charToSquare(char: Char) = char match

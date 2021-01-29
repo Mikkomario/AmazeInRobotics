@@ -1,4 +1,4 @@
-package controller
+package robots.controller
 
 import robots.model.enumeration.StunCause
 

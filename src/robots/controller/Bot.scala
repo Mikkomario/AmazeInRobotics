@@ -1,6 +1,6 @@
-package controller
+package robots.controller
 
-import controller.GlobalBotSettings._
+import robots.controller.GlobalBotSettings._
 import robots.model.{BotColors, GridPosition, MapMemory}
 import robots.model.enumeration.{RobotCommand, StunCause}
 import robots.model.enumeration.RobotCommand.{LinearScan, MiniScan, Move, MoveTowards, RotateHead, WideScan}

@@ -1,6 +1,6 @@
-package controller
+package robots.controller
 
-import robots.model.{BaseGrid, GridPosition}
+import robots.model.{GridPosition, WorldMap}
 import robots.model.enumeration.Square.{BotLocation, TreasureLocation}
 import utopia.flow.collection.VolatileList
 import utopia.flow.datastructure.mutable.ResettableLazy
@@ -11,13 +11,13 @@ import utopia.flow.event.ChangeListener
  * @author Mikko Hilpinen
  * @since 22.1.2021, v1
  */
-class World(val base: BaseGrid, treasures: Vector[GridPosition], val speedModifier: Double = 1.0)
+class World(map: WorldMap, val speedModifier: Double = 1.0)
 {
 	// ATTRIBUTES   -----------------------------
 	
 	private var bots = Vector[Bot]()
 	
-	private val remainingTreasuresPointer = VolatileList(treasures)
+	private val remainingTreasuresPointer = VolatileList(map.treasureLocations)
 	private val worldStatePointer = ResettableLazy {
 		base ++ (remainingTreasuresPointer.value.map { _ -> TreasureLocation } ++
 			bots.map { _.worldGridPosition -> BotLocation })
@@ -38,6 +38,11 @@ class World(val base: BaseGrid, treasures: Vector[GridPosition], val speedModifi
 	
 	
 	// COMPUTED ---------------------------------
+	
+	/**
+	 * @return The basic world composition grid
+	 */
+	def base = map.baseGrid
 	
 	/**
 	 * @return Current state of this world

@@ -7,7 +7,7 @@ import java.time.Instant
 import scala.concurrent.duration.Duration
 
 /**
- * A view point into a map memory which contains both permanent and temporary information
+ * A robots.view point into a map memory which contains both permanent and temporary information
  * @author Mikko Hilpinen
  * @since 27.1.2021, v1
  */

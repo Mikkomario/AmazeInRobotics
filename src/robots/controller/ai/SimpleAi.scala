@@ -1,8 +1,8 @@
-package controller.ai
+package robots.controller.ai
 
-import controller.GlobalBotSettings._
-import controller.{AiFactory, BotCommandInterface}
-import controller.ai.SimpleAi.openScanBlocks
+import robots.controller.GlobalBotSettings._
+import robots.controller.{AiFactory, BotCommandInterface}
+import robots.controller.ai.SimpleAi.openScanBlocks
 import robots.model.enumeration.RobotCommand.{LinearScan, MiniScan, WideScan}
 import utopia.flow.event.ChangingLike
 import utopia.flow.util.WaitUtils

@@ -2,7 +2,7 @@ package robots.model
 
 import robots.model.enumeration.Square.TreasureLocation
 import robots.model.enumeration.{PermanentSquare, Square, TemporarySquare}
-import controller.GlobalBotSettings._
+import robots.controller.GlobalBotSettings._
 import utopia.flow.caching.multi.Cache
 import utopia.flow.util.CollectionExtensions._
 import utopia.flow.util.TimeExtensions._
@@ -25,7 +25,7 @@ object MapMemory
 }
 
 /**
- * Represents a bot's view of the world
+ * Represents a bot's robots.view of the world
  * @author Mikko Hilpinen
  * @since 24.1.2021, v1
  */
@@ -75,7 +75,7 @@ case class MapMemory(base: BaseMapMemory, temporariesData: Map[GridPosition, (Te
 	
 	/**
 	 * @param deadlines Maximum memorization durations for different square types
-	 * @return A view to this map which applies specified memorization durations
+	 * @return A robots.view to this map which applies specified memorization durations
 	 */
 	def view(deadlines: Map[Square, Duration]) = MapMemoryView(this, deadlines)
 	

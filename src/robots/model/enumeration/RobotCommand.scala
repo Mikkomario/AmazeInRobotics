@@ -1,7 +1,7 @@
 package robots.model.enumeration
 
 import utopia.genesis.shape.shape2D.Direction2D
-import controller.GlobalBotSettings._
+import robots.controller.GlobalBotSettings._
 import robots.model.enumeration.RobotCommandType.{HeadRotation, Interact, Movement, Scan}
 import utopia.genesis.shape.shape1D.RotationDirection
 
