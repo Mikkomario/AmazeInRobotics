@@ -1,6 +1,6 @@
 package robots.model.enumeration
 
-import robots.model.enumeration.Square.{Empty, Wall}
+import robots.model.enumeration.Square.{BotLocation, Empty, TreasureLocation, Wall}
 import utopia.flow.util.TimeExtensions._
 import utopia.genesis.color.Color
 
@@ -30,6 +30,11 @@ sealed trait Square
 	 */
 	def color: Color
 	
+	/**
+	 * @return Name of this square type
+	 */
+	def name: String
+	
 	
 	// COMPUTED ----------------------------
 	
@@ -57,6 +62,16 @@ sealed trait TemporarySquare extends Square
 
 object Square
 {
+	// ATTRIBUTES   -------------------------
+	
+	/**
+	 * All known square types
+	 */
+	lazy val values = PermanentSquare.values ++ TemporarySquare.values
+	
+	
+	// NESTED   -----------------------------
+	
 	/**
 	 * An empty square that can be freely be moved through
 	 */
@@ -67,6 +82,8 @@ object Square
 		override def isPassable = true
 		
 		override def blocksSight = false
+		
+		override def name = "Empty"
 	}
 	
 	/**
@@ -79,6 +96,8 @@ object Square
 		override def isPassable = false
 		
 		override def blocksSight = true
+		
+		override def name = "Wall"
 	}
 	
 	/**
@@ -93,6 +112,8 @@ object Square
 		override def isPassable = false
 		
 		override def blocksSight = false
+		
+		override def name = "Bot Location"
 	}
 	
 	/**
@@ -107,6 +128,8 @@ object Square
 		override def isPassable = true
 		
 		override def blocksSight = false
+		
+		override def name = "Treasure"
 	}
 }
 
@@ -115,5 +138,13 @@ object PermanentSquare
 	/**
 	 * All permanent square options
 	 */
-	val values = Vector(Empty, Wall)
+	lazy val values = Vector(Empty, Wall)
+}
+
+object TemporarySquare
+{
+	/**
+	 * All temporary square options
+	 */
+	lazy val values = Vector(TreasureLocation, BotLocation)
 }

@@ -1,6 +1,6 @@
 package robots.editor.view.controller
 
-import robots.editor.view.controller.GridVC.{gridLineColor, gridLineWidth, minGridSide, squareSideStackLength}
+import robots.editor.view.controller.GridVC.{backgroundColor, gridLineColor, gridLineWidth, minGridSide, squareSideStackLength}
 import robots.model.GridPosition
 import robots.model.enumeration.Square
 import robots.editor.view.util.RobotsSetup._
@@ -24,6 +24,11 @@ import utopia.reflection.shape.stack.{StackLength, StackSize}
 
 object GridVC
 {
+	/**
+	 * Background color used in this view
+	 */
+	val backgroundColor = colorScheme.gray.light
+	
 	private val minGridSide = 5
 	private val gridLineWidth = 1
 	private val gridLineColor = Color.black.withAlpha(0.66)
@@ -149,7 +154,7 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 			val gridTopLeftPosition = Alignment.Center.position(gridPixelSize, bounds, fitWithinBounds = false).position
 			
 			// Draws the background
-			drawer.onlyFill(colorScheme.gray.light)
+			drawer.onlyFill(backgroundColor)
 			
 			// Draws the square data
 			val squareDrawers = Cache[Square, Drawer] { s => drawer.onlyFill(s.color) }
