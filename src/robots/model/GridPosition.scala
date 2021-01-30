@@ -116,4 +116,16 @@ case class GridPosition(override val x: Int, override val y: Int) extends TwoDim
 		case Left => this + (-movement, 0)
 		case Right => this + (movement, 0)
 	}
+	
+	/**
+	 * @param other Another position
+	 * @return The top left of these positions - In other words, minimum x and minimum y
+	 */
+	def topLeft(other: GridPosition) = GridPosition(x min other.x, y min other.y)
+	
+	/**
+	 * @param other Another position
+	 * @return The bottom right of these positions - In other words, maximum x and maximum y
+	 */
+	def bottomRight(other: GridPosition) = GridPosition(x max other.x, y max other.y)
 }
