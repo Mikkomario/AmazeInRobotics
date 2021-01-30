@@ -14,6 +14,7 @@ import utopia.genesis.shape.Axis2D
 import utopia.genesis.shape.shape2D.{Bounds, Line, Size}
 import utopia.genesis.util.{Distance, Drawer}
 import utopia.inception.handling.immutable.Handleable
+import utopia.reach.component.factory.ComponentFactoryFactory
 import utopia.reach.component.hierarchy.ComponentHierarchy
 import utopia.reach.component.template.CustomDrawReachComponent
 import utopia.reach.util.Priority.High
@@ -22,7 +23,7 @@ import utopia.reflection.component.drawing.template.DrawLevel.Normal
 import utopia.reflection.shape.Alignment
 import utopia.reflection.shape.stack.{StackLength, StackSize}
 
-object GridVC
+object GridVC extends ComponentFactoryFactory[GridVCFactory]
 {
 	/**
 	 * Background color used in this view
@@ -38,6 +39,19 @@ object GridVC
 		val base = Distance.ofCm(1).toScreenPixels
 		StackLength(base / 4, base, base * 2)
 	}
+	
+	override def apply(hierarchy: ComponentHierarchy) = new GridVCFactory(hierarchy)
+}
+
+class GridVCFactory(parentHierarchy: ComponentHierarchy)
+{
+	/**
+	 * Creates a new grid VC
+	 * @param selectedSquareTypePointer A readable pointer to the currently selected square type
+	 * @return A new grid vc
+	 */
+	def apply(selectedSquareTypePointer: Viewable[Option[Square]]) =
+		new GridVC(parentHierarchy, selectedSquareTypePointer)
 }
 
 /**
