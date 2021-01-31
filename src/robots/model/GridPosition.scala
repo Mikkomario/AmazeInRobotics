@@ -29,6 +29,8 @@ case class GridPosition(override val x: Int, override val y: Int) extends TwoDim
 	
 	// IMPLEMENTED  -------------------------
 	
+	override def toString = s"($x, $y)"
+	
 	override val dimensions = Vector(x, y)
 	
 	override protected def zeroDimension = 0

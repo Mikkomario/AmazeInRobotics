@@ -1,5 +1,6 @@
 package robots.editor.view.controller
 
+import robots.editor.model.enumeration.CustomCursors.Draw
 import robots.editor.view.controller.GridVC.{backgroundColor, gridLineColor, gridLineWidth, minGridSide, squareSideStackLength}
 import robots.model.GridPosition
 import robots.model.enumeration.Square
@@ -11,12 +12,13 @@ import utopia.genesis.color.Color
 import utopia.genesis.event.{MouseButtonStateEvent, MouseEvent, MouseMoveEvent}
 import utopia.genesis.handling.{MouseButtonStateListener, MouseMoveListener}
 import utopia.genesis.shape.Axis2D
-import utopia.genesis.shape.shape2D.{Bounds, Line, Size}
+import utopia.genesis.shape.shape2D.{Bounds, Line, Point, Size}
 import utopia.genesis.util.{Distance, Drawer}
 import utopia.inception.handling.immutable.Handleable
 import utopia.reach.component.factory.ComponentFactoryFactory
 import utopia.reach.component.hierarchy.ComponentHierarchy
-import utopia.reach.component.template.CustomDrawReachComponent
+import utopia.reach.component.template.{CursorDefining, CustomDrawReachComponent}
+import utopia.reach.cursor.Cursor
 import utopia.reach.util.Priority.High
 import utopia.reflection.component.drawing.template.CustomDrawer
 import utopia.reflection.component.drawing.template.DrawLevel.Normal
@@ -28,7 +30,7 @@ object GridVC extends ComponentFactoryFactory[GridVCFactory]
 	/**
 	 * Background color used in this view
 	 */
-	val backgroundColor = colorScheme.gray.light
+	val backgroundColor = Color.blue.withSaturation(0.2).withLuminosity(0.45)
 	
 	private val minGridSide = 5
 	private val gridLineWidth = 1
@@ -60,7 +62,7 @@ class GridVCFactory(parentHierarchy: ComponentHierarchy)
  * @since 29.1.2021, v1
  */
 class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTypePointer: Viewable[Option[Square]])
-	extends CustomDrawReachComponent
+	extends CustomDrawReachComponent with CursorDefining
 {
 	// ATTRIBUTES   -------------------------------
 	
@@ -70,13 +72,14 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 		// Calculates the smallest and largest x and y values, having at least 'minGridSide' difference
 		var minX = 0
 		var minY = 0
-		var maxX = minGridSide
-		var maxY = minGridSide
+		var maxX = 4
+		var maxY = 4
 		data.keys.foreach { p =>
 			if (p.x < minX)
 				minX = p.x
 			else if (p.x > maxX)
 				maxX = p.x
+			
 			if (p.y < minY)
 				minY = p.y
 			else if (p.y > maxY)
@@ -85,6 +88,7 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 		GridPosition(minX - 1, minY - 1) -> GridPosition(maxX + 1, maxY + 1)
 	}
 	
+	// TODO: Should this be +1 +1?
 	private val gridSizePointer = gridPositionsPointer.map { case (min, max) => max - min }
 	
 	override val customDrawers = Vector[CustomDrawer](GridDrawer)
@@ -92,14 +96,19 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 	
 	// INITIAL CODE -------------------------------
 	
+	gridPositionsPointer.addListener(println)
+	gridSizePointer.addListener { e => println(s"Grid size change: ${e}") }
+	
 	// Revalidates / repaints on certain updates
 	gridSizePointer.addAnyChangeListener { revalidateAndRepaint(High) }
 	dataPointer.addListener { change =>
+		repaint()
+		/* This didn't work properly
 		// Checks which squares changed and repaints those
 		change.mergeBy { _.keySet } { _ ++ _ }.foreach { position =>
 			if (change.differentBy { _.get(position) })
 				repaintArea(GridDrawer.boundsForSquare(position), High)
-		}
+		}*/
 	}
 	
 	// Starts listening to mouse events
@@ -129,6 +138,30 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 		squareSideStackLength * gridWidthSquares, squareSideStackLength * gridHeightSquares)
 	
 	override def updateLayout() = ()
+	
+	override def cursorType = Draw
+	
+	override def cursorBounds = GridDrawer.gridBounds + positionInTop
+	
+	override def cursorToImage(cursor: Cursor, position: Point) =
+	{
+		val targetPosition = calculateGridPosition(position)
+		data.get(targetPosition) match
+		{
+			case Some(square) => cursor.over(square.color)
+			case None => cursor.over(backgroundColor)
+		}
+	}
+	
+	
+	// OTHER    -----------------------------------
+	
+	// NB: Parameter is relative to the grid top left corner, not the position of this component
+	private def calculateGridPosition(gridPixelPosition: Point) =
+	{
+		val rawTargetPosition = gridPixelPosition / GridDrawer.squareSideLength
+		GridPosition(rawTargetPosition.x.toInt, rawTargetPosition.y.toInt) + minPosition
+	}
 	
 	
 	// NESTED   -----------------------------------
@@ -161,23 +194,25 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 		override def draw(drawer: Drawer, bounds: Bounds) =
 		{
 			val size = gridSize
-			val smallerAreaSideLength = bounds.minDimension
-			val squareSideLength = smallerAreaSideLength / (size.dimensions.max: Double)
+			val squareSideLength = Axis2D.values.map { axis => bounds.size.along(axis) / size.along(axis) }.min
 			val squarePixelSize = Size.square(squareSideLength)
 			val gridPixelSize = (size * squareSideLength).toSize
 			val gridTopLeftPosition = Alignment.Center.position(gridPixelSize, bounds, fitWithinBounds = false).position
+			val topLeftSquarePosition = minPosition
+			val newGridBounds = Bounds(gridTopLeftPosition, gridPixelSize)
 			
 			// Draws the background
-			drawer.onlyFill(backgroundColor)
+			drawer.onlyFill(backgroundColor).draw(newGridBounds)
 			
 			// Draws the square data
 			val squareDrawers = Cache[Square, Drawer] { s => drawer.onlyFill(s.color) }
 			data.foreach { case (position, squareType) =>
-				squareDrawers(squareType).draw(Bounds(position * squareSideLength, squarePixelSize))
+				squareDrawers(squareType).draw(Bounds(gridTopLeftPosition +
+					(position - topLeftSquarePosition) * squareSideLength, squarePixelSize))
 			}
 			
 			// Draws the lines
-			val lineDrawer = drawer.onlyFill(gridLineColor).withStroke(gridLineWidth)
+			val lineDrawer = drawer.onlyEdges(gridLineColor).withStroke(gridLineWidth)
 			Axis2D.values.foreach { axis =>
 				val lineVector = axis.perpendicular(gridPixelSize.along(axis.perpendicular))
 				(0 to size.along(axis)).foreach { c =>
@@ -187,7 +222,7 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 			}
 			
 			// Remembers last draw area information
-			_gridBounds = Bounds(gridTopLeftPosition, gridPixelSize)
+			_gridBounds = newGridBounds
 			this._squareSideLength = squareSideLength
 		}
 	}
@@ -221,17 +256,16 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 		def handleMouseEvent(event: MouseEvent[_]) =
 		{
 			// Calculates the currently targeted grid position
-			val rawTargetPosition = (event.mousePosition - GridDrawer.gridBounds.position) / GridDrawer.squareSideLength
-			val actualTargetPosition = GridPosition(rawTargetPosition.x.toInt, rawTargetPosition.y.toInt) + minPosition
+			val targetPosition = calculateGridPosition(event.mousePosition - GridDrawer.gridBounds.position)
 			// Updates data if necessary
 			selectedSquareTypePointer.value match
 			{
 				case Some(fillType) =>
-					if (!data.get(actualTargetPosition).contains(fillType))
-						dataPointer.update { _ + (actualTargetPosition -> fillType) }
+					if (!data.get(targetPosition).contains(fillType))
+						dataPointer.update { _ + (targetPosition -> fillType) }
 				case None =>
-					if (data.contains(actualTargetPosition))
-						dataPointer.update { _ - actualTargetPosition }
+					if (data.contains(targetPosition))
+						dataPointer.update { _ - targetPosition }
 			}
 		}
 	}

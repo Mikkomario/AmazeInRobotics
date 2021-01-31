@@ -1,6 +1,5 @@
 package robots.editor.view.util
 
-import utopia.genesis.generic.GenesisDataType
 import utopia.genesis.handling.mutable.ActorHandler
 import utopia.reflection.color.{ColorScheme, ColorSet}
 import utopia.reflection.component.context.{AnimationContext, BaseContext, ScrollingContext}
@@ -16,8 +15,6 @@ import utopia.reflection.text.FontStyle.Plain
  */
 object RobotsSetup
 {
-	GenesisDataType.setup()
-	
 	val actorHandler = ActorHandler()
 	val colorScheme = ColorScheme.twoTone(ColorSet.fromHexes("#212121", "#484848", "#000000").get,
 		ColorSet.fromHexes("#ffab00", "#ffdd4b", "#c67c00").get)
