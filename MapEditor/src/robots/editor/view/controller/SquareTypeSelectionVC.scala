@@ -4,12 +4,16 @@ import robots.editor.view.controller.SquareTypeSelectionVC.exampleSquareStackSiz
 import robots.model.enumeration.Square
 import robots.editor.view.util.RobotsSetup._
 import utopia.flow.datastructure.mutable.PointerWithEvents
+import utopia.genesis.event.ConsumeEvent
+import utopia.genesis.handling.MouseButtonStateListener
 import utopia.reach.component.factory.{ContextInsertableComponentFactory, ContextInsertableComponentFactoryFactory, ContextualComponentFactory, Mixed}
 import utopia.reach.component.hierarchy.ComponentHierarchy
 import utopia.reach.component.input.RadioButton
 import utopia.reach.component.label.{EmptyLabel, TextLabel}
-import utopia.reach.component.template.ReachComponentWrapper
+import utopia.reach.component.template.{CursorDefining, ReachComponentWrapper}
 import utopia.reach.container.{SegmentGroup, Stack}
+import utopia.reach.cursor.CursorType.Interactive
+import utopia.reflection.color.ColorShade.Light
 import utopia.reflection.component.context.TextContextLike
 import utopia.reflection.component.template.input.InteractionWithPointer
 import utopia.reflection.container.stack.StackLayout.{Center, Fit, Leading, Trailing}
@@ -75,13 +79,20 @@ class SquareTypeSelectionVC(parentHierarchy: ComponentHierarchy,
 			(Square.values.map { Some(_) } :+ None).map { squareType =>
 				rowFactory.build(Mixed).segmented(segmentGroup, Center, areRelated = true) { factories =>
 					// Each row contains a radio button, description label and a coloured block
+					val radioButton = factories.next()(RadioButton).apply(valuePointer, squareType)
+					val label = factories.next()(TextLabel).apply(squareType match
+					{
+						case Some(squareType) => squareType.name
+						case None => "Clear"
+					})
+					label.addMouseButtonListener(MouseButtonStateListener.onLeftPressedInside(label.bounds) { _ =>
+						radioButton.select()
+						Some(ConsumeEvent("Radio button selected via label"))
+					})
+					CursorDefining.defineCursorFor(label, Interactive, Light)
 					Vector(
-						factories.next()(RadioButton).apply(valuePointer, squareType),
-						factories.next()(TextLabel).apply(squareType match
-						{
-							case Some(squareType) => squareType.name
-							case None => "Clear"
-						}),
+						radioButton,
+						label,
 						factories.next()(EmptyLabel).withoutContext.withBackground(squareType match
 						{
 							case Some(squareType) => squareType.color

@@ -29,7 +29,7 @@ class MainVC(parentHierarchy: ComponentHierarchy) extends ReachComponentWrapper
 			factories(AlignFrame).build(GridVC)
 				.apply(Center, Vector(BackgroundDrawer(colorScheme.gray))) { _.apply(selectedSquareTypePointer) },
 			factories(Framing).buildFilledWithMappedContext[ColorContext, TextContext,
-				ContextualSquareTypeSelectionFactory](baseContext, colorScheme.gray.dark,
+				ContextualSquareTypeSelectionFactory](baseContext, colorScheme.primary,
 				SquareTypeSelectionVC) { _.forTextComponents }
 				.apply(margins.medium.any.toInsets.expandingToBottom) { _.apply(selectedSquareTypePointer) }
 		)

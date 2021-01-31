@@ -1,10 +1,9 @@
 package robots.editor.view.controller
 
 import robots.editor.model.enumeration.CustomCursors.Draw
-import robots.editor.view.controller.GridVC.{backgroundColor, gridLineColor, gridLineWidth, minGridSide, squareSideStackLength}
+import robots.editor.view.controller.GridVC.{backgroundColor, gridLineColor, gridLineWidth, squareSideStackLength}
 import robots.model.GridPosition
 import robots.model.enumeration.Square
-import robots.editor.view.util.RobotsSetup._
 import utopia.flow.caching.multi.Cache
 import utopia.flow.datastructure.mutable.PointerWithEvents
 import utopia.flow.datastructure.template.Viewable
@@ -72,8 +71,8 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 		// Calculates the smallest and largest x and y values, having at least 'minGridSide' difference
 		var minX = 0
 		var minY = 0
-		var maxX = 4
-		var maxY = 4
+		var maxX = 0
+		var maxY = 0
 		data.keys.foreach { p =>
 			if (p.x < minX)
 				minX = p.x
@@ -83,32 +82,26 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 			if (p.y < minY)
 				minY = p.y
 			else if (p.y > maxY)
-				maxY = p.x
+				maxY = p.y
 		}
 		GridPosition(minX - 1, minY - 1) -> GridPosition(maxX + 1, maxY + 1)
 	}
 	
-	// TODO: Should this be +1 +1?
-	private val gridSizePointer = gridPositionsPointer.map { case (min, max) => max - min }
+	private val gridSizePointer = gridPositionsPointer.map { case (min, max) => max + (1, 1) - min }
 	
 	override val customDrawers = Vector[CustomDrawer](GridDrawer)
 	
 	
 	// INITIAL CODE -------------------------------
 	
-	gridPositionsPointer.addListener(println)
-	gridSizePointer.addListener { e => println(s"Grid size change: ${e}") }
-	
 	// Revalidates / repaints on certain updates
 	gridSizePointer.addAnyChangeListener { revalidateAndRepaint(High) }
 	dataPointer.addListener { change =>
-		repaint()
-		/* This didn't work properly
 		// Checks which squares changed and repaints those
 		change.mergeBy { _.keySet } { _ ++ _ }.foreach { position =>
 			if (change.differentBy { _.get(position) })
 				repaintArea(GridDrawer.boundsForSquare(position), High)
-		}*/
+		}
 	}
 	
 	// Starts listening to mouse events
@@ -183,8 +176,8 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 		
 		// OTHER    -------------------------------
 		
-		def boundsForSquare(position: GridPosition) = Bounds(_gridBounds.position + position * _squareSideLength,
-			Size.square(_squareSideLength))
+		def boundsForSquare(position: GridPosition) = Bounds(_gridBounds.position +
+			(position - minPosition) * _squareSideLength, Size.square(_squareSideLength))
 		
 		
 		// IMPLEMENTED  ---------------------------
