@@ -1,6 +1,6 @@
 package robots.editor.view.app
 
-import robots.editor.view.controller.MainVC
+import robots.editor.view.controller.{GridFileDropListener, MainVC}
 import robots.editor.view.util.Icons
 import utopia.flow.async.ThreadPool
 import utopia.genesis.generic.GenesisDataType
@@ -10,6 +10,7 @@ import utopia.reflection.container.swing.window.Frame
 import utopia.reflection.container.swing.window.WindowResizePolicy.Program
 import utopia.reflection.util.SingleFrameSetup
 
+import java.awt.dnd.DropTarget
 import scala.concurrent.ExecutionContext
 
 /**
@@ -35,4 +36,7 @@ object AmazeInRoboticsMapEditorApp extends App
 	val frame = Frame.windowed(canvas.parent, "AmazeInRobots Map Editor", Program)
 	frame.setToCloseOnEsc()
 	new SingleFrameSetup(actorHandler, frame).start()
+	
+	// Starts listening for file drop events
+	new DropTarget(canvas.parent.component, GridFileDropListener(canvas.child.importMap))
 }

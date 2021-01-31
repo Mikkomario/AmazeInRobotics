@@ -2,8 +2,9 @@ package robots.editor.view.controller
 
 import robots.editor.model.enumeration.CustomCursors.Draw
 import robots.editor.view.controller.GridVC.{backgroundColor, gridLineColor, gridLineWidth, squareSideStackLength}
-import robots.model.GridPosition
-import robots.model.enumeration.Square
+import robots.model.{BaseGrid, GridPosition, WorldMap}
+import robots.model.enumeration.{PermanentSquare, Square}
+import robots.model.enumeration.Square.{BotLocation, Empty, TreasureLocation}
 import utopia.flow.caching.multi.Cache
 import utopia.flow.datastructure.mutable.PointerWithEvents
 import utopia.flow.datastructure.template.Viewable
@@ -24,6 +25,8 @@ import utopia.reflection.component.drawing.template.DrawLevel.Normal
 import utopia.reflection.shape.Alignment
 import utopia.reflection.shape.stack.{StackLength, StackSize}
 
+import scala.collection.immutable.VectorBuilder
+
 object GridVC extends ComponentFactoryFactory[GridVCFactory]
 {
 	/**
@@ -31,7 +34,6 @@ object GridVC extends ComponentFactoryFactory[GridVCFactory]
 	 */
 	val backgroundColor = Color.blue.withSaturation(0.2).withLuminosity(0.45)
 	
-	private val minGridSide = 5
 	private val gridLineWidth = 1
 	private val gridLineColor = Color.black.withAlpha(0.66)
 	
@@ -111,6 +113,49 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 	
 	// COMPUTED -----------------------------------
 	
+	/**
+	 * @return A world map based on this grid's current state
+	 */
+	def toWorldMap =
+	{
+		val (minPosition, maxPosition) = gridPositionsPointer.value
+		val topLeft = minPosition + (1, 1)
+		val bottomRight = maxPosition - (1, 1)
+		
+		// Collects treasure and bot locations to separate vectors
+		val treasureLocationsBuilder = new VectorBuilder[GridPosition]()
+		val botLocationsBuilder = new VectorBuilder[GridPosition]()
+		
+		val data = dataPointer.value
+		
+		// Collects permanent squares to column[row] vectors
+		val yRange = topLeft.y to bottomRight.y
+		val squareData = (topLeft.x to bottomRight.x).map { x =>
+			yRange.map { y =>
+				val position = GridPosition(x, y)
+				data.get(position) match
+				{
+					case Some(squareType) =>
+						squareType match
+						{
+							case p: PermanentSquare => p
+							case TreasureLocation =>
+								treasureLocationsBuilder += (position - topLeft)
+								Empty
+							case BotLocation =>
+								botLocationsBuilder += (position - topLeft)
+								Empty
+							case _ => Empty
+						}
+					case None => Empty
+				}
+			}.toVector
+		}.toVector
+		
+		// Creates the world map
+		WorldMap(BaseGrid(squareData), treasureLocationsBuilder.result().toSet, botLocationsBuilder.result())
+	}
+	
 	private def data = dataPointer.value
 	
 	private def minPosition = gridPositionsPointer.value._1
@@ -148,6 +193,24 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 	
 	
 	// OTHER    -----------------------------------
+	
+	/**
+	 * Updates this view to reflect a specific map
+	 * @param map A world map to import
+	 */
+	def importMap(map: WorldMap) =
+	{
+		// Calculates the base data from base grid
+		val yRange = 0 until map.baseGrid.height
+		val baseData = (0 until map.baseGrid.width).flatMap { x =>
+			yRange.map { y => GridPosition(x, y) -> map.baseGrid(x, y) }
+		}.toMap
+		// Adds treasure and bot locations
+		val newData = baseData ++ map.treasureLocations.map { p => p -> TreasureLocation } ++
+			map.botStartLocations.map { p => p -> BotLocation }
+		// Updates local data
+		dataPointer.value = newData
+	}
 	
 	// NB: Parameter is relative to the grid top left corner, not the position of this component
 	private def calculateGridPosition(gridPixelPosition: Point) =

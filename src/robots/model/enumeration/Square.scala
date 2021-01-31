@@ -35,6 +35,11 @@ sealed trait Square
 	 */
 	def name: String
 	
+	/**
+	 * @return A character that represents this square type
+	 */
+	def characterCode: Char
+	
 	
 	// COMPUTED ----------------------------
 	
@@ -84,6 +89,8 @@ object Square
 		override def blocksSight = false
 		
 		override def name = "Empty"
+		
+		override def characterCode = ' '
 	}
 	
 	/**
@@ -98,6 +105,8 @@ object Square
 		override def blocksSight = true
 		
 		override def name = "Wall"
+		
+		override def characterCode = 'X'
 	}
 	
 	/**
@@ -114,6 +123,8 @@ object Square
 		override def blocksSight = false
 		
 		override def name = "Bot Location"
+		
+		override def characterCode = 'B'
 	}
 	
 	/**
@@ -130,6 +141,8 @@ object Square
 		override def blocksSight = false
 		
 		override def name = "Treasure"
+		
+		override def characterCode = 'T'
 	}
 }
 

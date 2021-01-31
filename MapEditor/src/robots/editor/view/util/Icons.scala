@@ -38,7 +38,11 @@ object Icons
 	
 	// COMPUTED ----------------------------------
 	
+	def close = cache("close.png")
+	
 	def edit = cache("edit.png")
+	
+	def save = cache("save.png")
 	
 	def arrowCursor = cache("cursor-arrow.png")
 	
