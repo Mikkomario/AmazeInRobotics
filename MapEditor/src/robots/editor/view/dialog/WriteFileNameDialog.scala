@@ -12,7 +12,6 @@ import utopia.reach.container.{Framing, ReachCanvas, Stack}
 import utopia.reflection.container.swing.window.WindowResizePolicy.Program
 import utopia.reflection.container.swing.window.Dialog
 import utopia.reflection.shape.LengthExtensions._
-import utopia.reflection.text.Regex
 
 import java.awt.event.KeyEvent
 import scala.concurrent.{ExecutionContext, Promise}
@@ -40,12 +39,16 @@ object WriteFileNameDialog
 		// Creates window contents first
 		// The window contains a text field, an ok button and a cancel button
 		val canvas = ReachCanvas(Some(Icons.cursors)) { hierarchy =>
+			// Main framing
 			Framing(hierarchy).buildFilledWithContext(baseContext, background, Stack).apply(margins.medium.any) { stackFactory =>
+				// Main components row
 				stackFactory.mapContext { _.forTextComponents }.build(Mixed)
 					.row() { factories =>
-						val field = factories(TextField).forString(inputFieldWidth, Fixed("File Name"),
-							inputFilter = Some(!Regex.newLine))
+						// Input text field
+						val field = factories(TextField).mapContext { _.noLineBreaksAllowed }
+							.forString(inputFieldWidth, Fixed("File Name"))
 						def saveAction(): Unit = resultPromise.success(Some(field.value))
+						// Save button, which is enabled only while there is input
 						val saveButton = factories.mapContext { _.forSecondaryColorButtons }(ViewImageAndTextButton)
 							.withStaticTextAndIcon("OK", Icons.save, field.valuePointer.map { _.nonEmpty }) { saveAction() }
 						// If enter is pressed in the field, triggers the save button
@@ -54,6 +57,7 @@ object WriteFileNameDialog
 						Vector(
 							field,
 							saveButton,
+							// Cancel button which closes this window
 							factories.mapContext { _.forPrimaryColorButtons }(ImageAndTextButton)
 								.withIcon(Icons.close, "Cancel",
 									hotKeyCharacters = Vector(KeyEvent.VK_ESCAPE)) { resultPromise.success(None) }

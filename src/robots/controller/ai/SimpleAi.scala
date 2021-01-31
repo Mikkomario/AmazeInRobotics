@@ -52,7 +52,7 @@ class SimpleAi(controller: BotCommandInterface)
 		if (controller.collectNearestTreasureBlocking())
 		{
 			failures = 0
-			println("Found treasure")
+			// println("Found treasure")
 		}
 		// Finds the best scan target
 		controller.memory.base.calculateBestScan(
@@ -69,7 +69,7 @@ class SimpleAi(controller: BotCommandInterface)
 		{
 			case Some((route, direction, scan)) =>
 				failures = 0
-				println(s"Moves ${route.actualTravelDistance} times and scans ($scan) towards $direction")
+				// println(s"Moves ${route.actualTravelDistance} times and scans ($scan) towards $direction")
 				// Executes the best scan target
 				if (controller.takeRouteBlocking(route))
 				{

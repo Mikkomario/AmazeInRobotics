@@ -12,6 +12,7 @@ import scala.collection.immutable.VectorBuilder
  * @author Mikko Hilpinen
  * @since 22.1.2021, v1
  */
+@deprecated("Please read maps from json files instead", "v1")
 object MapReader
 {
 	/**

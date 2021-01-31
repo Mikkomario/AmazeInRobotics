@@ -11,5 +11,6 @@
     <orderEntry type="module" module-name="Flow" />
     <orderEntry type="module" module-name="Genesis" />
     <orderEntry type="module" module-name="Inception" />
+    <orderEntry type="module" module-name="BunnyMunch" />
   </component>
 </module>
