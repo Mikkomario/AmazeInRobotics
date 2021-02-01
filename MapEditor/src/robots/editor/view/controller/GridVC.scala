@@ -102,7 +102,8 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 		// Checks which squares changed and repaints those
 		change.mergeBy { _.keySet } { _ ++ _ }.foreach { position =>
 			if (change.differentBy { _.get(position) })
-				repaintArea(GridDrawer.boundsForSquare(position), High)
+				parentHierarchy.repaint(GridDrawer.boundsForSquare(position), High)
+				// repaintArea(GridDrawer.boundsForSquare(position), High)
 		}
 	}
 	
