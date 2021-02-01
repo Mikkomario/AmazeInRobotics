@@ -1,6 +1,6 @@
 package robots.model.enumeration
 
-import robots.model.enumeration.Square.{BotLocation, Empty, TreasureLocation, Wall}
+import robots.model.enumeration.Square.{Empty, Fog, GlassWall, TreasureLocation, Wall}
 import utopia.flow.util.TimeExtensions._
 import utopia.genesis.color.Color
 
@@ -63,6 +63,11 @@ sealed trait TemporarySquare extends Square
 	 * @return How long this temporary square should remain visible
 	 */
 	def visibilityDuration: Duration
+	
+	/**
+	 * @return The permanent square that hosts this temporary square
+	 */
+	def underlyingSquare: PermanentSquare
 }
 
 object Square
@@ -80,7 +85,7 @@ object Square
 	/**
 	 * An empty square that can be freely be moved through
 	 */
-	object Empty extends PermanentSquare
+	case object Empty extends PermanentSquare
 	{
 		override val color = Color.gray(0.9)
 		
@@ -96,7 +101,7 @@ object Square
 	/**
 	 * A wall square that blocks movement and sight
 	 */
-	object Wall extends PermanentSquare
+	case object Wall extends PermanentSquare
 	{
 		override val color = Color.black
 		
@@ -110,9 +115,41 @@ object Square
 	}
 	
 	/**
+	 * A wall square that blocks movement but not sight
+	 */
+	case object GlassWall extends PermanentSquare
+	{
+		override def isPassable = false
+		
+		override def blocksSight = false
+		
+		override def color = Color.cyan
+		
+		override def name = "Glass Wall"
+		
+		override def characterCode = 'H'
+	}
+	
+	/**
+	 * A square which blocks line of sight but not movement
+	 */
+	case object Fog extends PermanentSquare
+	{
+		override def isPassable = true
+		
+		override def blocksSight = true
+		
+		override val color = Color.cyan.average(Color.green).withSaturation(0.45).withLuminosity(0.75)
+		
+		override def name = "Fog"
+		
+		override def characterCode = 'O'
+	}
+	
+	/**
 	 * A square that represents a robot's temporary location
 	 */
-	object BotLocation extends TemporarySquare
+	case class BotLocation(underlyingSquare: PermanentSquare) extends TemporarySquare
 	{
 		override val color = Color.red
 		
@@ -130,7 +167,7 @@ object Square
 	/**
 	 * A square that represents last known location of a treasure
 	 */
-	object TreasureLocation extends TemporarySquare
+	case object TreasureLocation extends TemporarySquare
 	{
 		override val visibilityDuration = 35.seconds
 		
@@ -143,6 +180,8 @@ object Square
 		override def name = "Treasure"
 		
 		override def characterCode = 'T'
+		
+		override def underlyingSquare = Empty
 	}
 }
 
@@ -151,13 +190,13 @@ object PermanentSquare
 	/**
 	 * All permanent square options
 	 */
-	lazy val values = Vector(Empty, Wall)
+	lazy val values = Vector(Empty, Wall, GlassWall, Fog)
 }
 
 object TemporarySquare
 {
 	/**
-	 * All temporary square options
+	 * All static temporary square options
 	 */
-	lazy val values = Vector(TreasureLocation, BotLocation)
+	lazy val values = Vector(TreasureLocation)
 }

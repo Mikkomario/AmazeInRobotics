@@ -130,12 +130,14 @@ case class MapMemory(base: BaseMapMemory, temporariesData: Map[GridPosition, (Te
 		// removes that temporary memory
 		val permanentSquares = permanentUpdates.map { _._1 }.toSet
 		val temporariesToRemove = temporariesData.keySet & permanentSquares
+		val allPermanentUpdates = permanentUpdates ++ temporaryUpdates.map { case (position, (square, _)) =>
+			position -> square.underlyingSquare }
 		
 		if (temporaryUpdates.nonEmpty || temporariesToRemove.nonEmpty)
-			copy(base = base.withData(permanentUpdates),
+			copy(base = base.withData(allPermanentUpdates),
 				temporariesData = (temporariesData -- temporariesToRemove) ++ temporaryUpdates)
 		else
-			withBase(base.withData(permanentUpdates))
+			withBase(base.withData(allPermanentUpdates))
 	}
 	
 	/**
@@ -149,7 +151,8 @@ case class MapMemory(base: BaseMapMemory, temporariesData: Map[GridPosition, (Te
 		squareType match
 		{
 			case p: PermanentSquare => withBase(base.withSquare(squareLocation, p))
-			case t: TemporarySquare => copy(temporariesData = temporariesData + (squareLocation -> (t -> dataTime)))
+			case t: TemporarySquare => MapMemory(base.withSquare(squareLocation, t.underlyingSquare),
+				temporariesData + (squareLocation -> (t -> dataTime)))
 		}
 	}
 	

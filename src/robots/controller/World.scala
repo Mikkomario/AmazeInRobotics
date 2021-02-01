@@ -20,7 +20,10 @@ class World(map: WorldMap, val speedModifier: Double = 1.0)
 	private val remainingTreasuresPointer = VolatileList(map.treasureLocations)
 	private val worldStatePointer = ResettableLazy {
 		base ++ (remainingTreasuresPointer.value.map { _ -> TreasureLocation } ++
-			bots.map { _.worldGridPosition -> BotLocation })
+			bots.map { b =>
+				val position = b.worldGridPosition
+				position -> BotLocation(map.baseGrid(position))
+			})
 	}
 	
 	private val resetWorldStateListener = ChangeListener.onAnyChange { worldStatePointer.reset() }

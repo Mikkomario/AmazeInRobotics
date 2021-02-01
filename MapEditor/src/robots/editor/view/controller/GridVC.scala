@@ -111,6 +111,8 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 	addMouseButtonListener(GridMouseListener)
 	addMouseMoveListener(GridMouseListener)
 	
+	this.register()
+	
 	
 	// COMPUTED -----------------------------------
 	
@@ -143,9 +145,9 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 							case TreasureLocation =>
 								treasureLocationsBuilder += (position - topLeft)
 								Empty
-							case BotLocation =>
+							case BotLocation(p) =>
 								botLocationsBuilder += (position - topLeft)
-								Empty
+								p
 							case _ => Empty
 						}
 					case None => Empty
@@ -180,7 +182,7 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 	
 	override def cursorType = Draw
 	
-	override def cursorBounds = GridDrawer.gridBounds + positionInTop
+	override def cursorBounds = GridDrawer.gridBounds + parentHierarchy.positionToTopModifier
 	
 	override def cursorToImage(cursor: Cursor, position: Point) =
 	{
@@ -208,7 +210,7 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 		}.toMap
 		// Adds treasure and bot locations
 		val newData = baseData ++ map.treasureLocations.map { p => p -> TreasureLocation } ++
-			map.botStartLocations.map { p => p -> BotLocation }
+			map.botStartLocations.map { p => p -> BotLocation(Empty) }
 		// Updates local data
 		dataPointer.value = newData
 	}
@@ -288,7 +290,7 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 	{
 		// ATTRIBUTES   ----------------------------------
 		
-		private val areaFilter = MouseEvent.isOverAreaFilter { GridDrawer.gridBounds + position }
+		private val areaFilter = MouseEvent.isOverAreaFilter { GridDrawer.gridBounds }
 		
 		// Reacts to mouse presses inside grid bounds
 		override val mouseButtonStateEventFilter = MouseButtonStateEvent.leftPressedFilter && areaFilter
