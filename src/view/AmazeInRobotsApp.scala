@@ -26,7 +26,7 @@ object AmazeInRobotsApp extends App
 	implicit val exc: ExecutionContext = new ThreadPool("AmazeInRobots").executionContext
 	
 	val (map, treasureLocations, botStartLocations) = MapReader("test-data/test-map-1.txt").get
-	val world = new World(map, treasureLocations, 2.5)
+	val world = new World(map, treasureLocations, 1.2)
 	val random = new Random()
 	val bot = new Bot(world, botStartLocations(random.nextInt(botStartLocations.size)), Up,
 		BotColors(Color.red.timesLuminosity(0.66), Color.red, Color.cyan.withAlpha(0.66)))
