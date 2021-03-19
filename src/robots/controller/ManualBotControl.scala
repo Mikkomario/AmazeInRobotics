@@ -1,4 +1,4 @@
-package controller
+package robots.controller
 
 import robots.model.enumeration.RelativeDirection.{Backward, Forward}
 import robots.model.enumeration.RobotCommand.{Collect, LinearScan, MiniScan, Move, MoveTowards, RotateHead, WideScan}
@@ -10,7 +10,7 @@ import utopia.inception.handling.HandlerType
 import java.awt.event.KeyEvent
 
 /**
- * A robot controller that is commanded manually
+ * A robot robots.controller that is commanded manually
  * @author Mikko Hilpinen
  * @since 21.1.2021, v1
  */

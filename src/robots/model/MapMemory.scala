@@ -2,7 +2,7 @@ package robots.model
 
 import robots.model.enumeration.Square.TreasureLocation
 import robots.model.enumeration.{PermanentSquare, Square, TemporarySquare}
-import controller.GlobalBotSettings._
+import robots.controller.GlobalBotSettings._
 import utopia.flow.caching.multi.Cache
 import utopia.flow.util.CollectionExtensions._
 import utopia.flow.util.TimeExtensions._
@@ -10,6 +10,7 @@ import utopia.genesis.shape.shape2D.{Bounds, Direction2D}
 import utopia.genesis.util.Drawer
 
 import java.time.Instant
+import scala.concurrent.duration.Duration
 
 object MapMemory
 {
@@ -24,7 +25,7 @@ object MapMemory
 }
 
 /**
- * Represents a bot's view of the world
+ * Represents a bot's robots.view of the world
  * @author Mikko Hilpinen
  * @since 24.1.2021, v1
  */
@@ -73,6 +74,12 @@ case class MapMemory(base: BaseMapMemory, temporariesData: Map[GridPosition, (Te
 	// OTHER    -----------------------------------
 	
 	/**
+	 * @param deadlines Maximum memorization durations for different square types
+	 * @return A robots.view to this map which applies specified memorization durations
+	 */
+	def view(deadlines: Map[Square, Duration]) = MapMemoryView(this, deadlines)
+	
+	/**
 	 * Draws this map data
 	 * @param drawer Drawer that will perform the drawing functions
 	 * @param zeroCoordinateLocation Grid location of the (0,0) coordinate in this data
@@ -119,10 +126,18 @@ case class MapMemory(base: BaseMapMemory, temporariesData: Map[GridPosition, (Te
 				case t: TemporarySquare => Left(position -> (t -> dataTime))
 			}
 		}
-		if (temporaryUpdates.nonEmpty)
-			copy(base = base.withData(permanentUpdates), temporariesData = temporariesData ++ temporaryUpdates)
+		// If there was a temporary memory about some location, and only base data is received on this update,
+		// removes that temporary memory
+		val permanentSquares = permanentUpdates.map { _._1 }.toSet
+		val temporariesToRemove = temporariesData.keySet & permanentSquares
+		val allPermanentUpdates = permanentUpdates ++ temporaryUpdates.map { case (position, (square, _)) =>
+			position -> square.underlyingSquare }
+		
+		if (temporaryUpdates.nonEmpty || temporariesToRemove.nonEmpty)
+			copy(base = base.withData(allPermanentUpdates),
+				temporariesData = (temporariesData -- temporariesToRemove) ++ temporaryUpdates)
 		else
-			withBase(base.withData(permanentUpdates))
+			withBase(base.withData(allPermanentUpdates))
 	}
 	
 	/**
@@ -136,7 +151,8 @@ case class MapMemory(base: BaseMapMemory, temporariesData: Map[GridPosition, (Te
 		squareType match
 		{
 			case p: PermanentSquare => withBase(base.withSquare(squareLocation, p))
-			case t: TemporarySquare => copy(temporariesData = temporariesData + (squareLocation -> (t -> dataTime)))
+			case t: TemporarySquare => MapMemory(base.withSquare(squareLocation, t.underlyingSquare),
+				temporariesData + (squareLocation -> (t -> dataTime)))
 		}
 	}
 	

@@ -1,4 +1,4 @@
-package controller
+package robots.controller
 
 import utopia.flow.event.ChangingLike
 

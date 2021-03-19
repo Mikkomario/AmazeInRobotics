@@ -8,9 +8,12 @@
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="scala-sdk-2.13.3" level="application" />
+    <orderEntry type="module" module-name="AmazeInRobotics" />
     <orderEntry type="module" module-name="Flow" />
     <orderEntry type="module" module-name="Genesis" />
     <orderEntry type="module" module-name="Inception" />
+    <orderEntry type="module" module-name="Reach" />
+    <orderEntry type="module" module-name="Reflection" />
     <orderEntry type="module" module-name="BunnyMunch" />
   </component>
 </module>

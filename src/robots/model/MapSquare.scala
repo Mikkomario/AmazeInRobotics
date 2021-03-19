@@ -22,7 +22,7 @@ object MapSquare
 }
 
 /**
- * A view into a square location in bot memory
+ * A robots.view into a square location in bot memory
  * @author Mikko Hilpinen
  * @since 24.1.2021, v1
  */

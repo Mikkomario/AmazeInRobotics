@@ -1,7 +1,7 @@
 package robots.model
 
 import robots.model.enumeration.PermanentSquare
-import controller.GlobalBotSettings._
+import robots.controller.GlobalBotSettings._
 import robots.model.enumeration.ScanType.{Linear, Mini, Wide}
 import utopia.flow.caching.multi.Cache
 import utopia.flow.datastructure.immutable.Graph
@@ -14,7 +14,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
 
 /**
- * Represents a bot's view of the stable world
+ * Represents a bot's robots.view of the stable world
  * @author Mikko Hilpinen
  * @since 24.1.2021, v1
  */

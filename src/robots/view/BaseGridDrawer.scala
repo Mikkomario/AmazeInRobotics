@@ -1,8 +1,8 @@
-package view
+package robots.view
 
 import robots.model.BaseGrid
 import robots.model.enumeration.PermanentSquare
-import controller.GlobalBotSettings._
+import robots.controller.GlobalBotSettings._
 import utopia.flow.util.CollectionExtensions._
 import utopia.genesis.handling.Drawable
 import utopia.genesis.shape.shape2D.{Bounds, Point}

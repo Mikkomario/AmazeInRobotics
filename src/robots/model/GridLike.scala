@@ -15,13 +15,13 @@ trait GridLike[+A <: Square]
 	// ABSTRACT --------------------------
 	
 	/**
-	 * @param row Row index
-	 * @param column Column index
+	 * @param x Row index
+	 * @param y Column index
 	 * @return Type of square at that position
 	 * @throws IndexOutOfBoundsException If position was outside of this grid
 	 */
 	@throws[IndexOutOfBoundsException]("If targeting square outside of this grid")
-	def apply(row: Int, column: Int): A
+	def apply(x: Int, y: Int): A
 	
 	/**
 	 * @param position A position

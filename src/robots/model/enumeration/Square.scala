@@ -1,6 +1,6 @@
 package robots.model.enumeration
 
-import robots.model.enumeration.Square.{Empty, Wall}
+import robots.model.enumeration.Square.{Empty, Fog, GlassWall, TreasureLocation, Wall}
 import utopia.flow.util.TimeExtensions._
 import utopia.genesis.color.Color
 
@@ -30,6 +30,16 @@ sealed trait Square
 	 */
 	def color: Color
 	
+	/**
+	 * @return Name of this square type
+	 */
+	def name: String
+	
+	/**
+	 * @return A character that represents this square type
+	 */
+	def characterCode: Char
+	
 	
 	// COMPUTED ----------------------------
 	
@@ -53,38 +63,93 @@ sealed trait TemporarySquare extends Square
 	 * @return How long this temporary square should remain visible
 	 */
 	def visibilityDuration: Duration
+	
+	/**
+	 * @return The permanent square that hosts this temporary square
+	 */
+	def underlyingSquare: PermanentSquare
 }
 
 object Square
 {
+	// ATTRIBUTES   -------------------------
+	
+	/**
+	 * All known square types
+	 */
+	lazy val values = PermanentSquare.values ++ TemporarySquare.values
+	
+	
+	// NESTED   -----------------------------
+	
 	/**
 	 * An empty square that can be freely be moved through
 	 */
-	object Empty extends PermanentSquare
+	case object Empty extends PermanentSquare
 	{
 		override val color = Color.gray(0.9)
 		
 		override def isPassable = true
 		
 		override def blocksSight = false
+		
+		override def name = "Empty"
+		
+		override def characterCode = ' '
 	}
 	
 	/**
 	 * A wall square that blocks movement and sight
 	 */
-	object Wall extends PermanentSquare
+	case object Wall extends PermanentSquare
 	{
 		override val color = Color.black
 		
 		override def isPassable = false
 		
 		override def blocksSight = true
+		
+		override def name = "Wall"
+		
+		override def characterCode = 'X'
+	}
+	
+	/**
+	 * A wall square that blocks movement but not sight
+	 */
+	case object GlassWall extends PermanentSquare
+	{
+		override def isPassable = false
+		
+		override def blocksSight = false
+		
+		override def color = Color.cyan
+		
+		override def name = "Glass Wall"
+		
+		override def characterCode = 'H'
+	}
+	
+	/**
+	 * A square which blocks line of sight but not movement
+	 */
+	case object Fog extends PermanentSquare
+	{
+		override def isPassable = true
+		
+		override def blocksSight = true
+		
+		override val color = Color.cyan.average(Color.green).withSaturation(0.45).withLuminosity(0.75)
+		
+		override def name = "Fog"
+		
+		override def characterCode = 'O'
 	}
 	
 	/**
 	 * A square that represents a robot's temporary location
 	 */
-	object BotLocation extends TemporarySquare
+	case class BotLocation(underlyingSquare: PermanentSquare) extends TemporarySquare
 	{
 		override val color = Color.red
 		
@@ -93,12 +158,16 @@ object Square
 		override def isPassable = false
 		
 		override def blocksSight = false
+		
+		override def name = "Bot Location"
+		
+		override def characterCode = 'B'
 	}
 	
 	/**
 	 * A square that represents last known location of a treasure
 	 */
-	object TreasureLocation extends TemporarySquare
+	case object TreasureLocation extends TemporarySquare
 	{
 		override val visibilityDuration = 35.seconds
 		
@@ -107,6 +176,12 @@ object Square
 		override def isPassable = true
 		
 		override def blocksSight = false
+		
+		override def name = "Treasure"
+		
+		override def characterCode = 'T'
+		
+		override def underlyingSquare = Empty
 	}
 }
 
@@ -115,5 +190,13 @@ object PermanentSquare
 	/**
 	 * All permanent square options
 	 */
-	val values = Vector(Empty, Wall)
+	lazy val values = Vector(Empty, Wall, GlassWall, Fog)
+}
+
+object TemporarySquare
+{
+	/**
+	 * All static temporary square options
+	 */
+	lazy val values = Vector(TreasureLocation)
 }

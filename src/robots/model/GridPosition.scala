@@ -2,14 +2,29 @@ package robots.model
 
 import utopia.genesis.shape.shape2D.{Direction2D, Point, TwoDimensional, Vector2D, Vector2DLike}
 import Direction2D._
+import utopia.flow.datastructure.immutable.Model
+import utopia.flow.datastructure.template
+import utopia.flow.datastructure.template.Property
+import utopia.flow.generic.{FromModelFactory, ModelConvertible}
+import utopia.flow.generic.ValueConversions._
 import utopia.genesis.util.Scalable
 
-object GridPosition
+import scala.util.Success
+
+object GridPosition extends FromModelFactory[GridPosition]
 {
+	// ATTRIBUTES   --------------------------
+	
 	/**
 	 * The (0, 0) grid position
 	 */
 	val origin = GridPosition(0, 0)
+	
+	
+	// IMPLEMENTED  --------------------------
+	
+	override def apply(model: template.Model[Property]) =
+		Success(GridPosition(model("x").getInt, model("y").getInt))
 }
 
 /**
@@ -17,7 +32,8 @@ object GridPosition
  * @author Mikko Hilpinen
  * @since 20.1.2021, v1
  */
-case class GridPosition(override val x: Int, override val y: Int) extends TwoDimensional[Int] with Scalable[Point]
+case class GridPosition(override val x: Int, override val y: Int)
+	extends TwoDimensional[Int] with Scalable[Point] with ModelConvertible
 {
 	// ATTRIBUTES   -------------------------
 	
@@ -28,6 +44,8 @@ case class GridPosition(override val x: Int, override val y: Int) extends TwoDim
 	
 	
 	// IMPLEMENTED  -------------------------
+	
+	override def toString = s"($x, $y)"
 	
 	override val dimensions = Vector(x, y)
 	
@@ -44,6 +62,11 @@ case class GridPosition(override val x: Int, override val y: Int) extends TwoDim
 	 * @return Positions adjacent to this one
 	 */
 	def adjacent = Direction2D.values.map { this + _ }
+	
+	
+	// IMPLEMENTED  -------------------------
+	
+	override def toModel = Model(Vector("x" -> x, "y" -> y))
 	
 	
 	// OTHER    -----------------------------
@@ -116,4 +139,16 @@ case class GridPosition(override val x: Int, override val y: Int) extends TwoDim
 		case Left => this + (-movement, 0)
 		case Right => this + (movement, 0)
 	}
+	
+	/**
+	 * @param other Another position
+	 * @return The top left of these positions - In other words, minimum x and minimum y
+	 */
+	def topLeft(other: GridPosition) = GridPosition(x min other.x, y min other.y)
+	
+	/**
+	 * @param other Another position
+	 * @return The bottom right of these positions - In other words, maximum x and maximum y
+	 */
+	def bottomRight(other: GridPosition) = GridPosition(x max other.x, y max other.y)
 }
