@@ -3,6 +3,7 @@ package robots.editor.view.controller
 import robots.editor.view.controller.SquareTypeSelectionVC.exampleSquareStackSize
 import robots.model.enumeration.Square
 import robots.editor.view.util.RobotsSetup._
+import robots.model.enumeration.Square.{BotLocation, Empty}
 import utopia.flow.datastructure.mutable.PointerWithEvents
 import utopia.genesis.event.ConsumeEvent
 import utopia.genesis.handling.MouseButtonStateListener
@@ -76,7 +77,7 @@ class SquareTypeSelectionVC(parentHierarchy: ComponentHierarchy,
 	override protected val wrapped = Stack(parentHierarchy).withContext(context).build(Stack)
 		.column() { rowFactory =>
 			// Creates a row for each square type
-			(Square.values.map { Some(_) } :+ None).map { squareType =>
+			(Square.values.map { Some(_) } :+ Some(BotLocation(Empty)) :+ None).map { squareType =>
 				rowFactory.build(Mixed).segmented(segmentGroup, Center, areRelated = true) { factories =>
 					// Each row contains a radio button, description label and a coloured block
 					val radioButton = factories.next()(RadioButton).apply(valuePointer, squareType)

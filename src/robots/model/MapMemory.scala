@@ -5,7 +5,7 @@ import robots.model.enumeration.{PermanentSquare, Square, TemporarySquare}
 import robots.controller.GlobalBotSettings._
 import utopia.flow.caching.multi.Cache
 import utopia.flow.util.CollectionExtensions._
-import utopia.flow.util.TimeExtensions._
+import utopia.flow.time.TimeExtensions._
 import utopia.genesis.shape.shape2D.{Bounds, Direction2D}
 import utopia.genesis.util.Drawer
 

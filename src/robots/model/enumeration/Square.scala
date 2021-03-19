@@ -1,7 +1,7 @@
 package robots.model.enumeration
 
-import robots.model.enumeration.Square.{Empty, Fog, GlassWall, TreasureLocation, Wall}
-import utopia.flow.util.TimeExtensions._
+import robots.model.enumeration.Square.{BotLocation, Empty, Fog, GlassWall, TreasureLocation, Wall}
+import utopia.flow.time.TimeExtensions._
 import utopia.genesis.color.Color
 
 import scala.concurrent.duration.Duration
@@ -190,7 +190,7 @@ object PermanentSquare
 	/**
 	 * All permanent square options
 	 */
-	lazy val values = Vector(Empty, Wall, GlassWall, Fog)
+	lazy val values = Vector[PermanentSquare](Empty, Wall, GlassWall, Fog)
 }
 
 object TemporarySquare

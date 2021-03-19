@@ -11,6 +11,7 @@ import utopia.reach.component.input.TextField
 import utopia.reach.container.{Framing, ReachCanvas, Stack}
 import utopia.reflection.container.swing.window.WindowResizePolicy.Program
 import utopia.reflection.container.swing.window.Dialog
+import utopia.reflection.event.HotKey
 import utopia.reflection.shape.LengthExtensions._
 
 import java.awt.event.KeyEvent
@@ -60,7 +61,7 @@ object WriteFileNameDialog
 							// Cancel button which closes this window
 							factories.mapContext { _.forPrimaryColorButtons }(ImageAndTextButton)
 								.withIcon(Icons.close, "Cancel",
-									hotKeyCharacters = Vector(KeyEvent.VK_ESCAPE)) { resultPromise.success(None) }
+									hotKeys = Set(HotKey.keyWithIndex(KeyEvent.VK_ESCAPE))) { resultPromise.success(None) }
 						)
 					}
 			}

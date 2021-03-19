@@ -5,8 +5,8 @@ import robots.controller.{AiFactory, BotCommandInterface}
 import robots.controller.ai.SimpleAi.openScanBlocks
 import robots.model.enumeration.RobotCommand.{LinearScan, MiniScan, WideScan}
 import utopia.flow.event.ChangingLike
-import utopia.flow.util.WaitUtils
-import utopia.flow.util.TimeExtensions._
+import utopia.flow.time.WaitUtils
+import utopia.flow.time.TimeExtensions._
 
 import scala.concurrent.ExecutionContext
 

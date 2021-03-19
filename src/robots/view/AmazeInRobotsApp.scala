@@ -8,7 +8,7 @@ import utopia.flow.async.AsyncExtensions._
 import utopia.flow.async.ThreadPool
 import utopia.flow.util.CollectionExtensions._
 import utopia.flow.util.FileExtensions._
-import utopia.flow.util.TimeExtensions._
+import utopia.flow.time.TimeExtensions._
 import utopia.flow.util.StringExtensions._
 import utopia.genesis.color.Color
 import utopia.genesis.shape.shape2D.Direction2D.Up

@@ -42,6 +42,7 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	/**
 	 * Shortest routes to mini scan opportunities
 	 */
+	// TODO: Use another algorithm
 	lazy val bestMiniScanRoutes = bestRoutesFrom(miniScanRoutes)
 	
 	/**
@@ -51,6 +52,7 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	/**
 	 * Shortest routes to linear scan opportunities
 	 */
+	// TODO: Use another algorithm
 	lazy val bestLinearScanRoutes = bestRoutesFrom(linearScanRoutes)
 	
 	/**
@@ -197,6 +199,7 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	 * @param costFunction A function for calculating the cost of a route + scan direction combination
 	 * @return The best mini scan option cost-wise (lowest cost)
 	 */
+	// TODO: Use another algorithm
 	def calculateBestMiniScan(costFunction: (MapRoute[PermanentSquare], Direction2D) => Double) =
 		miniScanRoutes.minByOption { case (route, dir) => costFunction(route, dir) }
 	
@@ -205,6 +208,7 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	 * @param costFunction A function for calculating the cost of a route + scan direction combination
 	 * @return The best linear scan option cost-wise (lowest cost)
 	 */
+	// TODO: Use another algorithm
 	def calculateBestLinearScan(costFunction: (MapRoute[PermanentSquare], Direction2D) => Double) =
 		linearScanRoutes.minByOption { case (route, direction) => costFunction(route, direction) }
 	
@@ -215,6 +219,7 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	 *                       boolean indicating whether there may be more squares uncovered.
 	 * @return The best wide scan option rewards and cost-wise
 	 */
+	// TODO: Use another algorithm
 	def calculateBestWideScan(costFunction: (MapRoute[PermanentSquare], Direction2D) => Double)
 	                         (rewardFunction: (Set[GridPosition], Boolean) => Double) =
 		wideScanOptions.maxByOption { case (route, dir, known, more) =>
@@ -230,6 +235,7 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	 * @param costFunction A function for calculating the cost of a route + scan direction combination
 	 * @return The scan option that provides the greatest reward / cost ratio
 	 */
+	// TODO: Use another algorithm
 	def calculateBestScan(miniScanReward: Double, linearScanReward: Double)
 	                     (wideRewardFunction: (Set[GridPosition], Boolean) => Double)
 	                     (costFunction: (MapRoute[PermanentSquare], Direction2D) => Double) =

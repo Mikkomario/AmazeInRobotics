@@ -1,7 +1,7 @@
 package robots.model
 
 import robots.model.enumeration.Square
-import utopia.flow.util.TimeExtensions._
+import utopia.flow.time.TimeExtensions._
 
 import java.time.Instant
 import scala.concurrent.duration.Duration
