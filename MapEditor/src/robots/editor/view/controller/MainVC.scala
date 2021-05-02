@@ -17,7 +17,8 @@ import utopia.reach.component.factory.Mixed
 import utopia.reach.component.hierarchy.ComponentHierarchy
 import utopia.reach.component.template.{ReachComponentLike, ReachComponentWrapper}
 import utopia.reach.component.wrapper.ComponentCreationResult
-import utopia.reach.container.{AlignFrame, Framing, Stack}
+import utopia.reach.container.multi.stack.Stack
+import utopia.reach.container.wrapper.{AlignFrame, Framing}
 import utopia.reflection.component.context.{ButtonContext, ColorContext, TextContext}
 import utopia.reflection.component.drawing.immutable.BackgroundDrawer
 import utopia.reflection.shape.Alignment.Center

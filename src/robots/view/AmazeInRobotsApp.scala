@@ -59,7 +59,7 @@ object AmazeInRobotsApp extends App
 			case Success(map) =>
 				map.botStartLocations.zipWithIndex.foreach { case (startLocation, index) =>
 					println(s"Starting round ${index + 1}")
-					val world = new World(map, 2.5 + index * 3)
+					val world = new World(map, 2 + index * 3)
 					val bot = new Bot(world, startLocation, Up, botColors)
 					
 					world.registerBot(bot)

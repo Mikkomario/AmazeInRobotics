@@ -8,7 +8,9 @@ import utopia.genesis.util.Distance
 import utopia.reach.component.button.{ImageAndTextButton, ViewImageAndTextButton}
 import utopia.reach.component.factory.Mixed
 import utopia.reach.component.input.TextField
-import utopia.reach.container.{Framing, ReachCanvas, Stack}
+import utopia.reach.container.ReachCanvas
+import utopia.reach.container.multi.stack.Stack
+import utopia.reach.container.wrapper.Framing
 import utopia.reflection.container.swing.window.WindowResizePolicy.Program
 import utopia.reflection.container.swing.window.Dialog
 import utopia.reflection.event.HotKey

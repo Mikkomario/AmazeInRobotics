@@ -12,7 +12,7 @@ import utopia.reach.component.hierarchy.ComponentHierarchy
 import utopia.reach.component.input.RadioButton
 import utopia.reach.component.label.{EmptyLabel, TextLabel}
 import utopia.reach.component.template.{CursorDefining, ReachComponentWrapper}
-import utopia.reach.container.{SegmentGroup, Stack}
+import utopia.reach.container.multi.stack.{SegmentGroup, Stack}
 import utopia.reach.cursor.CursorType.Interactive
 import utopia.reflection.color.ColorShade.Light
 import utopia.reflection.component.context.TextContextLike

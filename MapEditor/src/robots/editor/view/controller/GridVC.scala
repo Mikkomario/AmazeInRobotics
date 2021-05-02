@@ -248,6 +248,8 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 		
 		// IMPLEMENTED  ---------------------------
 		
+		override def opaque = false
+		
 		override def drawLevel = Normal
 		
 		override def draw(drawer: Drawer, bounds: Bounds) =
