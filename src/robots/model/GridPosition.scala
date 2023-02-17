@@ -1,17 +1,19 @@
 package robots.model
 
-import utopia.genesis.shape.shape2D.{Direction2D, Point, TwoDimensional, Vector2D, Vector2DLike}
-import Direction2D._
-import utopia.flow.datastructure.immutable.Model
-import utopia.flow.datastructure.template
-import utopia.flow.datastructure.template.Property
-import utopia.flow.generic.{FromModelFactory, ModelConvertible}
-import utopia.flow.generic.ValueConversions._
-import utopia.genesis.util.Scalable
+import utopia.flow.generic.casting.ValueConversions._
+import utopia.flow.generic.factory.FromModelFactory
+import utopia.flow.generic.model.immutable.Model
+import utopia.flow.generic.model.template.ModelConvertible
+import utopia.flow.generic.model.template.ModelLike.AnyModel
+import utopia.flow.operator.Scalable
+import utopia.paradigm.enumeration.Direction2D
+import utopia.paradigm.enumeration.Direction2D._
+import utopia.paradigm.shape.shape2d.{Point, Vector2D}
+import utopia.paradigm.shape.template._
 
 import scala.util.Success
 
-object GridPosition extends FromModelFactory[GridPosition]
+object GridPosition extends DimensionsWrapperFactory[Int, GridPosition] with FromModelFactory[GridPosition]
 {
 	// ATTRIBUTES   --------------------------
 	
@@ -23,8 +25,17 @@ object GridPosition extends FromModelFactory[GridPosition]
 	
 	// IMPLEMENTED  --------------------------
 	
-	override def apply(model: template.Model[Property]) =
+	override def zeroDimension: Int = 0
+	
+	override def apply(dimensions: Dimensions[Int]) = new GridPosition(dimensions.withLength(2))
+	
+	override def apply(model: AnyModel) =
 		Success(GridPosition(model("x").getInt, model("y").getInt))
+	
+	override def from(other: HasDimensions[Int]): GridPosition = other match {
+		case p: GridPosition => p
+		case o => apply(o.dimensions)
+	}
 }
 
 /**
@@ -32,8 +43,8 @@ object GridPosition extends FromModelFactory[GridPosition]
  * @author Mikko Hilpinen
  * @since 20.1.2021, v1
  */
-case class GridPosition(override val x: Int, override val y: Int)
-	extends TwoDimensional[Int] with Scalable[Point] with ModelConvertible
+case class GridPosition private(override val dimensions: Dimensions[Int])
+	extends Dimensional[Int, GridPosition] with Scalable[Double, Point] with ModelConvertible
 {
 	// ATTRIBUTES   -------------------------
 	
@@ -47,11 +58,9 @@ case class GridPosition(override val x: Int, override val y: Int)
 	
 	override def toString = s"($x, $y)"
 	
-	override val dimensions = Vector(x, y)
+	override def self: GridPosition = this
 	
-	override protected def zeroDimension = 0
-	
-	override def repr = Point(x, y)
+	override def withDimensions(newDimensions: Dimensions[Int]): GridPosition = GridPosition(newDimensions)
 	
 	override def *(mod: Double) = Point(x * mod, y * mod)
 	
@@ -96,11 +105,11 @@ case class GridPosition(override val x: Int, override val y: Int)
 	}
 	
 	/**
-	 * @param movement a movement vector
-	 * @tparam V Type of movement vector
-	 * @return This position moved by specified amount
-	 */
-	def +[V <: Vector2DLike[V]](movement: V): V = movement + toVector
+	  * @param movement a movement vector
+	  * @tparam V Type of movement vector
+	  * @return This position moved by specified amount
+	  */
+	def +[V <: DoubleVectorLike[V]](movement: V): Vector2D = toVector + movement
 	
 	/**
 	 * @param other Another grid position
@@ -125,7 +134,7 @@ case class GridPosition(override val x: Int, override val y: Int)
 	 * @tparam V Type of movement vector
 	 * @return This position moved by specified amount
 	 */
-	def -[V <: Vector2DLike[V]](movement: V) = -movement + toVector
+	def -[V <: DoubleVectorLike[V]](movement: V): Vector2D = toVector - movement
 	
 	/**
 	 * @param direction Target direction

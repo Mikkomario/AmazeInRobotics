@@ -1,16 +1,17 @@
 package robots.model
 
-import utopia.flow.datastructure.immutable.{Model, ModelDeclaration, PropertyDeclaration}
-import utopia.flow.datastructure.template
-import utopia.flow.datastructure.template.Property
-import utopia.flow.generic.{FromModelFactory, ModelConvertible, VectorType}
-import utopia.flow.generic.ValueConversions._
+import utopia.flow.generic.casting.ValueConversions._
+import utopia.flow.generic.factory.FromModelFactory
+import utopia.flow.generic.model.immutable.{Model, ModelDeclaration, PropertyDeclaration}
+import utopia.flow.generic.model.mutable.DataType.VectorType
+import utopia.flow.generic.model.template.ModelConvertible
+import utopia.flow.generic.model.template.ModelLike.AnyModel
 
 object WorldMap extends FromModelFactory[WorldMap]
 {
 	private val schema = ModelDeclaration(PropertyDeclaration("base", VectorType))
 	
-	override def apply(model: template.Model[Property]) = schema.validate(model).toTry.flatMap { valid =>
+	override def apply(model: AnyModel) = schema.validate(model).toTry.flatMap { valid =>
 		BaseGrid.fromValue(valid("base")).map { base =>
 			WorldMap(base,
 				valid("treasure_locations").getVector.flatMap { _.model }.flatMap { GridPosition(_).toOption }.toSet,

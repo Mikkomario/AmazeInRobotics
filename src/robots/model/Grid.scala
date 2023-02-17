@@ -1,7 +1,7 @@
 package robots.model
 
 import robots.model.enumeration.Square
-import utopia.genesis.shape.shape2D.TwoDimensional
+import utopia.paradigm.shape.template.HasDimensions
 
 /**
  * A possible temporary grid state
@@ -28,6 +28,6 @@ case class Grid(data: Vector[Vector[Square]]) extends GridLike[Square]
 	
 	def apply(x: Int, y: Int) = data(x)(y)
 	
-	override def contains(position: TwoDimensional[Int]) = position.x >= 0 && position.y >= 0 &&
+	override def contains(position: HasDimensions[Int]) = position.x >= 0 && position.y >= 0 &&
 		position.x < width && position.y < height
 }

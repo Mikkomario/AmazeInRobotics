@@ -1,14 +1,15 @@
 package robots.model
 
-import robots.model.enumeration.PermanentSquare
 import robots.controller.GlobalBotSettings._
+import robots.model.enumeration.PermanentSquare
 import robots.model.enumeration.ScanType.{Linear, Mini, Wide}
-import utopia.flow.caching.multi.Cache
-import utopia.flow.datastructure.immutable.Graph
-import utopia.flow.datastructure.immutable.Graph.GraphViewNode
-import utopia.flow.util.CollectionExtensions._
-import utopia.genesis.shape.shape2D.{Bounds, Direction2D}
+import utopia.flow.collection.CollectionExtensions._
+import utopia.flow.collection.immutable.Graph
+import utopia.flow.collection.immutable.Graph.GraphViewNode
+import utopia.flow.collection.immutable.caching.cache.Cache
 import utopia.genesis.util.Drawer
+import utopia.paradigm.enumeration.Direction2D
+import utopia.paradigm.shape.shape2d.Bounds
 
 import scala.annotation.tailrec
 import scala.collection.immutable.VectorBuilder
@@ -65,7 +66,7 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	// Goes through each node, checking for possible scan results in any direction
 	lazy val wideScanOptions = graphNodes.flatMap { node =>
 		lazy val routes = routesTo(node)
-		val origin = node.content
+		val origin = node.value
 		Direction2D.values.flatMap { direction =>
 			val (knownResults, possiblyMore) = wideScanResultFrom(origin + direction, direction)
 			// If known or unknown results were found, returns that route + direction data
@@ -158,7 +159,7 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	 * @param position A grid position
 	 * @return All known routes to from the current bot location to that position
 	 */
-	def routesTo(position: GridPosition): Set[MapRoute[PermanentSquare]] = routesTo(graph(position))
+	def routesTo(position: GridPosition): Iterable[MapRoute[PermanentSquare]] = routesTo(graph(position))
 	
 	/**
 	 * @param node A graph node
@@ -166,14 +167,12 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	 */
 	def routesTo(node: GraphViewNode[GridPosition, Direction2D]) =
 	{
-		if (node.content == originNode.content)
+		if (node.value == originNode.value)
 			Set(MapRoute.empty(botLocation, this))
 		else
-		{
 			originNode.routesTo(node).map { route =>
-				MapRoute(botLocation +: route.map { _.end.content }, route.map { _.content }, this)
+				MapRoute(botLocation +: route.map { _.end.value }, route.map { _.value }, this)
 			}
-		}
 	}
 	
 	/**
@@ -257,10 +256,10 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	private def bestRouteFrom(routes: Iterable[(MapRoute[PermanentSquare], Direction2D)], currentHeading: Direction2D,
 	                          preferredMovementDirection: Direction2D) =
 	{
-		routes.bestMatch(Vector(
+		routes.bestMatch(
 			_._2 == currentHeading,
 			_._1.directions.headOption.forall { _ == preferredMovementDirection }
-		)).maxByOption { _._1.directions.count { _ == preferredMovementDirection } }
+		).maxByOption { _._1.directions.count { _ == preferredMovementDirection } }
 	}
 	
 	private def bestRoutesFrom(routes: Set[(MapRoute[PermanentSquare], Direction2D)]) =
@@ -277,7 +276,7 @@ case class BaseMapMemory(botLocation: GridPosition, data: Map[GridPosition, Perm
 	{
 		graphNodes.flatMap { node =>
 			lazy val routes = routesTo(node)
-			scan(node.content).iterator.flatMap { direction => routes.map { _ -> direction } }
+			scan(node.value).iterator.flatMap { direction => routes.map { _ -> direction } }
 		}
 	}
 	

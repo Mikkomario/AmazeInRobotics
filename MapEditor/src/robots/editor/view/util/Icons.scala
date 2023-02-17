@@ -1,8 +1,9 @@
 package robots.editor.view.util
 
 import robots.editor.model.enumeration.CustomCursors.Draw
-import utopia.flow.util.FileExtensions._
-import utopia.genesis.shape.shape2D.Point
+import robots.util.Common._
+import utopia.flow.parse.file.FileExtensions._
+import utopia.paradigm.shape.shape2d.Point
 import utopia.reach.cursor.CursorType.{Default, Interactive, Text}
 import utopia.reach.cursor.{Cursor, CursorSet, CursorType}
 import utopia.reflection.image.SingleColorIconCache

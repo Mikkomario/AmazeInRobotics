@@ -3,11 +3,11 @@ package robots.editor.view.controller
 import robots.editor.view.controller.SquareVC.squareStackSize
 import robots.editor.view.util.RobotsSetup
 import robots.model.enumeration.Square
-import utopia.flow.datastructure.mutable.PointerWithEvents
-import utopia.flow.event.Fixed
+import utopia.flow.view.mutable.eventful.PointerWithEvents
+import utopia.flow.view.immutable.eventful.Fixed
 import utopia.reach.component.factory.ComponentFactoryFactory
 import utopia.reach.component.hierarchy.ComponentHierarchy
-import utopia.reach.component.label.ViewEmptyLabel
+import utopia.reach.component.label.empty.ViewEmptyLabel
 import utopia.reach.component.template.ReachComponentWrapper
 import utopia.reflection.component.template.display.RefreshableWithPointer
 import utopia.reflection.shape.stack.StackLength

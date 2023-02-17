@@ -4,7 +4,7 @@ import robots.model.enumeration.RelativeDirection.{Backward, Forward}
 import robots.model.enumeration.RobotCommand.{Collect, LinearScan, MiniScan, Move, MoveTowards, RotateHead, WideScan}
 import utopia.genesis.event.KeyStateEvent
 import utopia.genesis.handling.KeyStateListener
-import utopia.genesis.shape.shape1D.RotationDirection.{Clockwise, Counterclockwise}
+import utopia.paradigm.enumeration.RotationDirection.{Clockwise, Counterclockwise}
 import utopia.inception.handling.HandlerType
 
 import java.awt.event.KeyEvent

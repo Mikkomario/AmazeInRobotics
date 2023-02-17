@@ -2,9 +2,10 @@ package robots.controller
 
 import robots.model.{GridPosition, WorldMap}
 import robots.model.enumeration.Square.{BotLocation, TreasureLocation}
-import utopia.flow.collection.VolatileList
-import utopia.flow.datastructure.mutable.ResettableLazy
-import utopia.flow.event.ChangeListener
+import utopia.flow.collection.mutable.VolatileList
+import utopia.flow.event.listener.ChangeListener
+import utopia.flow.event.model.DetachmentChoice
+import utopia.flow.view.mutable.caching.ResettableLazy
 
 /**
  * A world contains a base maze and also keeps track of and shares data with the bots
@@ -26,7 +27,10 @@ class World(map: WorldMap, val speedModifier: Double = 1.0)
 			})
 	}
 	
-	private val resetWorldStateListener = ChangeListener.onAnyChange { worldStatePointer.reset() }
+	private val resetWorldStateListener = ChangeListener.onAnyChange {
+		worldStatePointer.reset()
+		DetachmentChoice.continue
+	}
 	
 	/**
 	 * A pointer that will contain true once this competition has finished

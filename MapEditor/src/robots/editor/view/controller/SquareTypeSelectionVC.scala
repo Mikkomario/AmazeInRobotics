@@ -4,13 +4,14 @@ import robots.editor.view.controller.SquareTypeSelectionVC.exampleSquareStackSiz
 import robots.model.enumeration.Square
 import robots.editor.view.util.RobotsSetup._
 import robots.model.enumeration.Square.{BotLocation, Empty}
-import utopia.flow.datastructure.mutable.PointerWithEvents
+import utopia.flow.view.mutable.eventful.PointerWithEvents
 import utopia.genesis.event.ConsumeEvent
 import utopia.genesis.handling.MouseButtonStateListener
 import utopia.reach.component.factory.{ContextInsertableComponentFactory, ContextInsertableComponentFactoryFactory, ContextualComponentFactory, Mixed}
 import utopia.reach.component.hierarchy.ComponentHierarchy
-import utopia.reach.component.input.RadioButton
-import utopia.reach.component.label.{EmptyLabel, TextLabel}
+import utopia.reach.component.input.check.RadioButton
+import utopia.reach.component.label.empty.EmptyLabel
+import utopia.reach.component.label.text.TextLabel
 import utopia.reach.component.template.{CursorDefining, ReachComponentWrapper}
 import utopia.reach.container.multi.stack.{SegmentGroup, Stack}
 import utopia.reach.cursor.CursorType.Interactive

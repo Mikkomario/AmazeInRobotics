@@ -3,9 +3,9 @@ package robots.view
 import robots.model.BaseGrid
 import robots.model.enumeration.PermanentSquare
 import robots.controller.GlobalBotSettings._
-import utopia.flow.util.CollectionExtensions._
+import utopia.flow.collection.CollectionExtensions._
 import utopia.genesis.handling.Drawable
-import utopia.genesis.shape.shape2D.{Bounds, Point}
+import utopia.paradigm.shape.shape2d.{Bounds, Point}
 import utopia.genesis.util.Drawer
 import utopia.inception.handling.HandlerType
 

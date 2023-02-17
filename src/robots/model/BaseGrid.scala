@@ -1,11 +1,11 @@
 package robots.model
 
 import robots.model.enumeration.{PermanentSquare, Square}
-import utopia.flow.datastructure.immutable.Value
-import utopia.flow.generic.DataTypeException
-import utopia.flow.generic.ValueConversions._
-import utopia.flow.util.CollectionExtensions._
-import utopia.genesis.shape.shape2D.TwoDimensional
+import utopia.flow.generic.model.immutable.Value
+import utopia.flow.generic.casting.ValueConversions._
+import utopia.flow.collection.CollectionExtensions._
+import utopia.flow.error.DataTypeException
+import utopia.paradigm.shape.template.HasDimensions
 
 object BaseGrid
 {
@@ -78,7 +78,7 @@ case class BaseGrid(data: Vector[Vector[PermanentSquare]]) extends GridLike[Perm
 	@throws[IndexOutOfBoundsException]("If targeting square outside of this grid")
 	def apply(x: Int, y: Int) = data(x)(y)
 	
-	override def contains(position: TwoDimensional[Int]) = position.x >= 0 && position.y >= 0 &&
+	override def contains(position: HasDimensions[Int]) = position.x >= 0 && position.y >= 0 &&
 		position.x < width && position.y < height
 	
 	

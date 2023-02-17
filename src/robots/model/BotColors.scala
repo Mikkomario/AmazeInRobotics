@@ -1,6 +1,6 @@
 package robots.model
 
-import utopia.genesis.color.Color
+import utopia.paradigm.color.Color
 
 /**
  * A set of colors to use when drawing a bot

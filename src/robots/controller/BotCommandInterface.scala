@@ -4,9 +4,9 @@ import robots.model.{GridPosition, MapRoute}
 import robots.model.enumeration.{PermanentSquare, RobotCommand, ScanType}
 import robots.model.enumeration.RobotCommand.{Collect, MoveTowards, RotateHead}
 import utopia.flow.async.AsyncExtensions._
-import utopia.genesis.shape.shape1D.RotationDirection
-import utopia.genesis.shape.shape1D.RotationDirection.Clockwise
-import utopia.genesis.shape.shape2D.Direction2D
+import utopia.paradigm.enumeration.RotationDirection
+import utopia.paradigm.enumeration.RotationDirection.Clockwise
+import utopia.paradigm.enumeration.Direction2D
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -194,7 +194,7 @@ class BotCommandInterface(bot: Bot)
 	 * @return Future that completes with true when movement completes or completes with false when movement fails.
 	 *         Immediately returns false if no path could be calculated to the destination.
 	 */
-	def moveToOptimized(position: GridPosition)(selectRoute: Set[MapRoute[PermanentSquare]] => Option[MapRoute[_]]) =
+	def moveToOptimized(position: GridPosition)(selectRoute: Iterable[MapRoute[PermanentSquare]] => Option[MapRoute[_]]) =
 		selectRoute(memory.base.routesTo(position)) match
 		{
 			case Some(route) => takeRoute(route)

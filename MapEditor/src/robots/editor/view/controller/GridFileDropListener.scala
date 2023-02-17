@@ -2,14 +2,14 @@ package robots.editor.view.controller
 
 import robots.model.WorldMap
 import utopia.bunnymunch.jawn.JsonBunny
-import utopia.flow.util.CollectionExtensions._
-import utopia.flow.util.FileExtensions._
-import utopia.flow.util.StringExtensions._
+import utopia.flow.collection.CollectionExtensions._
+import utopia.flow.operator.EqualsExtensions._
+import utopia.flow.parse.file.FileExtensions._
 
-import scala.jdk.CollectionConverters._
-import java.awt.dnd.{DnDConstants, DropTargetDragEvent, DropTargetDropEvent, DropTargetEvent, DropTargetListener}
+import java.awt.dnd._
 import java.io.File
 import java.nio.file.Path
+import scala.jdk.CollectionConverters._
 import scala.util.{Failure, Success, Try}
 
 object GridFileDropListener

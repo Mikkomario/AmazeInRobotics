@@ -1,6 +1,6 @@
 package robots.model.enumeration
 
-import utopia.genesis.shape.shape2D.Direction2D
+import utopia.paradigm.enumeration.Direction2D
 
 /**
  * A common trait for causes for robot stun

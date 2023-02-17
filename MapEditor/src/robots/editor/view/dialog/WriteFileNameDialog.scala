@@ -2,12 +2,13 @@ package robots.editor.view.dialog
 
 import robots.editor.view.util.Icons
 import robots.editor.view.util.RobotsSetup._
-import utopia.flow.event.Fixed
+import utopia.flow.view.immutable.eventful.Fixed
 import utopia.genesis.event.KeyStateEvent
-import utopia.genesis.util.Distance
-import utopia.reach.component.button.{ImageAndTextButton, ViewImageAndTextButton}
+import utopia.genesis.util.Screen
+import utopia.paradigm.measurement.Distance
+import utopia.reach.component.button.image.{ImageAndTextButton, ViewImageAndTextButton}
 import utopia.reach.component.factory.Mixed
-import utopia.reach.component.input.TextField
+import utopia.reach.component.input.text.TextField
 import utopia.reach.container.ReachCanvas
 import utopia.reach.container.multi.stack.Stack
 import utopia.reach.container.wrapper.Framing
@@ -26,7 +27,7 @@ import scala.concurrent.{ExecutionContext, Promise}
  */
 object WriteFileNameDialog
 {
-	private lazy val inputFieldWidth = Distance.ofCm(5).toScreenPixels.any
+	private lazy val inputFieldWidth = Distance.ofCm(5).toPixels(Screen.ppi).any
 	
 	/**
 	 * Displays a dialog for writing a file name

@@ -1,7 +1,7 @@
 package robots.model
 
 import robots.model.enumeration.Square
-import utopia.genesis.shape.shape2D.Direction2D
+import utopia.paradigm.enumeration.Direction2D
 
 object MapRoute
 {

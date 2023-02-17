@@ -2,8 +2,9 @@ package robots.model
 
 import robots.model.enumeration.RelativeDirection.Forward
 import robots.model.enumeration.{RelativeDirection, Square}
-import utopia.flow.util.CollectionExtensions._
-import utopia.genesis.shape.shape2D.{Direction2D, TwoDimensional}
+import utopia.flow.collection.CollectionExtensions._
+import utopia.paradigm.enumeration.Direction2D
+import utopia.paradigm.shape.template.HasDimensions
 
 /**
  * A common trait for grids
@@ -27,7 +28,7 @@ trait GridLike[+A <: Square]
 	 * @param position A position
 	 * @return Whether this grid contains that position
 	 */
-	def contains(position: TwoDimensional[Int]): Boolean
+	def contains(position: HasDimensions[Int]): Boolean
 	
 	
 	// OTHER    --------------------------
@@ -38,13 +39,13 @@ trait GridLike[+A <: Square]
 	 * @throws IndexOutOfBoundsException If position was outside of this grid
 	 */
 	@throws[IndexOutOfBoundsException]("If targeting square outside of this grid")
-	def apply(position: TwoDimensional[Int]): A = apply(position.x, position.y)
+	def apply(position: HasDimensions[Int]): A = apply(position.x, position.y)
 	
 	/**
 	 * @param position Target position
 	 * @return Contents of this grid in that position. None if that position is outside of this grid
 	 */
-	def get(position: TwoDimensional[Int]) = if (contains(position)) Some(apply(position)) else None
+	def get(position: HasDimensions[Int]) = if (contains(position)) Some(apply(position)) else None
 	
 	/**
 	 * @param start The first included position

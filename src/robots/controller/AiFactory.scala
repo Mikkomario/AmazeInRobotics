@@ -1,6 +1,6 @@
 package robots.controller
 
-import utopia.flow.event.ChangingLike
+import utopia.flow.view.template.eventful.Changing
 
 import scala.concurrent.ExecutionContext
 
@@ -17,5 +17,5 @@ trait AiFactory
 	 * @param gameOverPointer A pointer that will contain true when the game is over / when this AI should stop. The
 	 *                        function should complete within a reasonable time after this pointer has changed to true.
 	 */
-	def apply(controller: BotCommandInterface, gameOverPointer: ChangingLike[Boolean])(implicit exc: ExecutionContext): Unit
+	def apply(controller: BotCommandInterface, gameOverPointer: Changing[Boolean])(implicit exc: ExecutionContext): Unit
 }

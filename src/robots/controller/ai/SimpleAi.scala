@@ -4,8 +4,8 @@ import robots.controller.GlobalBotSettings._
 import robots.controller.{AiFactory, BotCommandInterface}
 import robots.controller.ai.SimpleAi.openScanBlocks
 import robots.model.enumeration.RobotCommand.{LinearScan, MiniScan, WideScan}
-import utopia.flow.event.ChangingLike
-import utopia.flow.time.WaitUtils
+import utopia.flow.async.process.Wait
+import utopia.flow.view.template.eventful.Changing
 import utopia.flow.time.TimeExtensions._
 
 import scala.concurrent.ExecutionContext
@@ -19,7 +19,7 @@ object SimpleAi extends AiFactory
 	
 	// IMPLEMENTED  -------------------------
 	
-	override def apply(controller: BotCommandInterface, gameOverPointer: ChangingLike[Boolean])
+	override def apply(controller: BotCommandInterface, gameOverPointer: Changing[Boolean])
 	                  (implicit exc: ExecutionContext) =
 	{
 		gameOverPointer.futureWhere { !_ }.foreach { _ => controller.abortAllQueuedCommands() }
@@ -34,7 +34,7 @@ object SimpleAi extends AiFactory
  * @author Mikko Hilpinen
  * @since 25.1.2021, v1
  */
-class SimpleAi(controller: BotCommandInterface)
+class SimpleAi(controller: BotCommandInterface)(implicit exc: ExecutionContext)
 {
 	// ATTRIBUTES   ---------------------------
 	
@@ -78,7 +78,7 @@ class SimpleAi(controller: BotCommandInterface)
 				}
 			case None =>
 				println("No scan option found")
-				WaitUtils.wait(0.5.seconds, this)
+				Wait(0.5.seconds, this)
 				failures += 1
 		}
 		failures < 3

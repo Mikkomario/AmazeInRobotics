@@ -2,19 +2,20 @@ package robots.editor.view.controller
 
 import robots.editor.model.enumeration.CustomCursors.Draw
 import robots.editor.view.controller.GridVC.{backgroundColor, gridLineColor, gridLineWidth, squareSideStackLength}
-import robots.model.{BaseGrid, GridPosition, WorldMap}
-import robots.model.enumeration.{PermanentSquare, Square}
 import robots.model.enumeration.Square.{BotLocation, Empty, TreasureLocation}
-import utopia.flow.caching.multi.Cache
-import utopia.flow.datastructure.mutable.PointerWithEvents
-import utopia.flow.datastructure.template.Viewable
-import utopia.genesis.color.Color
+import robots.model.enumeration.{PermanentSquare, Square}
+import robots.model.{BaseGrid, GridPosition, WorldMap}
+import utopia.flow.collection.immutable.caching.cache.Cache
+import utopia.flow.view.immutable.View
+import utopia.flow.view.mutable.eventful.PointerWithEvents
 import utopia.genesis.event.{MouseButtonStateEvent, MouseEvent, MouseMoveEvent}
 import utopia.genesis.handling.{MouseButtonStateListener, MouseMoveListener}
-import utopia.genesis.shape.Axis2D
-import utopia.genesis.shape.shape2D.{Bounds, Line, Point, Size}
-import utopia.genesis.util.{Distance, Drawer}
+import utopia.genesis.util.{Drawer, Screen}
 import utopia.inception.handling.immutable.Handleable
+import utopia.paradigm.color.Color
+import utopia.paradigm.enumeration.{Alignment, Axis2D}
+import utopia.paradigm.measurement.Distance
+import utopia.paradigm.shape.shape2d.{Bounds, Line, Point, Size}
 import utopia.reach.component.factory.ComponentFactoryFactory
 import utopia.reach.component.hierarchy.ComponentHierarchy
 import utopia.reach.component.template.{CursorDefining, CustomDrawReachComponent}
@@ -22,7 +23,6 @@ import utopia.reach.cursor.Cursor
 import utopia.reach.util.Priority.High
 import utopia.reflection.component.drawing.template.CustomDrawer
 import utopia.reflection.component.drawing.template.DrawLevel.Normal
-import utopia.reflection.shape.Alignment
 import utopia.reflection.shape.stack.{StackLength, StackSize}
 
 import scala.collection.immutable.VectorBuilder
@@ -39,7 +39,7 @@ object GridVC extends ComponentFactoryFactory[GridVCFactory]
 	
 	private val squareSideStackLength =
 	{
-		val base = Distance.ofCm(1).toScreenPixels
+		val base = Distance.ofCm(1).toPixels(Screen.ppi)
 		StackLength(base / 4, base, base * 2)
 	}
 	
@@ -53,7 +53,7 @@ class GridVCFactory(parentHierarchy: ComponentHierarchy)
 	 * @param selectedSquareTypePointer A readable pointer to the currently selected square type
 	 * @return A new grid vc
 	 */
-	def apply(selectedSquareTypePointer: Viewable[Option[Square]]) =
+	def apply(selectedSquareTypePointer: View[Option[Square]]) =
 		new GridVC(parentHierarchy, selectedSquareTypePointer)
 }
 
@@ -62,7 +62,7 @@ class GridVCFactory(parentHierarchy: ComponentHierarchy)
  * @author Mikko Hilpinen
  * @since 29.1.2021, v1
  */
-class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTypePointer: Viewable[Option[Square]])
+class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTypePointer: View[Option[Square]])
 	extends CustomDrawReachComponent with CursorDefining
 {
 	// ATTRIBUTES   -------------------------------
@@ -101,7 +101,7 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 	dataPointer.addListener { change =>
 		// Checks which squares changed and repaints those
 		change.mergeBy { _.keySet } { _ ++ _ }.foreach { position =>
-			if (change.differentBy { _.get(position) })
+			if (change.notEqualsBy { _.get(position) })
 				parentHierarchy.repaint(GridDrawer.boundsForSquare(position), High)
 				// repaintArea(GridDrawer.boundsForSquare(position), High)
 		}
@@ -255,10 +255,10 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 		override def draw(drawer: Drawer, bounds: Bounds) =
 		{
 			val size = gridSize
-			val squareSideLength = Axis2D.values.map { axis => bounds.size.along(axis) / size.along(axis) }.min
+			val squareSideLength = Axis2D.values.map { axis => bounds.size(axis) / size(axis) }.min
 			val squarePixelSize = Size.square(squareSideLength)
 			val gridPixelSize = (size * squareSideLength).toSize
-			val gridTopLeftPosition = Alignment.Center.position(gridPixelSize, bounds, fitWithinBounds = false).position
+			val gridTopLeftPosition = Alignment.Center.position(gridPixelSize, bounds/*, fitWithinBounds = false*/)
 			val topLeftSquarePosition = minPosition
 			val newGridBounds = Bounds(gridTopLeftPosition, gridPixelSize)
 			
@@ -275,8 +275,8 @@ class GridVC(override val parentHierarchy: ComponentHierarchy, selectedSquareTyp
 			// Draws the lines
 			val lineDrawer = drawer.onlyEdges(gridLineColor).withStroke(gridLineWidth)
 			Axis2D.values.foreach { axis =>
-				val lineVector = axis.perpendicular(gridPixelSize.along(axis.perpendicular))
-				(0 to size.along(axis)).foreach { c =>
+				val lineVector = axis.perpendicular(gridPixelSize(axis.perpendicular))
+				(0 to size(axis)).foreach { c =>
 					val start = gridTopLeftPosition + axis(c * squareSideLength)
 					lineDrawer.draw(Line.ofVector(start, lineVector))
 				}

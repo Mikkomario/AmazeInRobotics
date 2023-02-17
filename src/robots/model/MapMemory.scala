@@ -1,13 +1,14 @@
 package robots.model
 
+import robots.controller.GlobalBotSettings._
 import robots.model.enumeration.Square.TreasureLocation
 import robots.model.enumeration.{PermanentSquare, Square, TemporarySquare}
-import robots.controller.GlobalBotSettings._
-import utopia.flow.caching.multi.Cache
-import utopia.flow.util.CollectionExtensions._
+import utopia.flow.collection.CollectionExtensions._
+import utopia.flow.collection.immutable.caching.cache.Cache
 import utopia.flow.time.TimeExtensions._
-import utopia.genesis.shape.shape2D.{Bounds, Direction2D}
 import utopia.genesis.util.Drawer
+import utopia.paradigm.enumeration.Direction2D
+import utopia.paradigm.shape.shape2d.Bounds
 
 import java.time.Instant
 import scala.concurrent.duration.Duration
@@ -40,8 +41,7 @@ case class MapMemory(base: BaseMapMemory, temporariesData: Map[GridPosition, (Te
 	 */
 	// Finds all known treasure locations
 	lazy val treasureRoutes = temporariesData.flatMap { case (position, (square, time)) =>
-		if (square == TreasureLocation)
-		{
+		if (square == TreasureLocation) {
 			// Calculates all routes to approach and grab that treasure
 			Direction2D.values.flatMap { direction =>
 				base.routesTo(position + direction).map { route => (route, direction.opposite, time) }
@@ -119,9 +119,8 @@ case class MapMemory(base: BaseMapMemory, temporariesData: Map[GridPosition, (Te
 	def withSquareData(data: Iterable[(GridPosition, Square)], dataTime: Instant = Instant.now()) =
 	{
 		// Splits the data into temporary and permanent updates
-		val (temporaryUpdates, permanentUpdates) = data.dividedWith { case (position, square) =>
-			square match
-			{
+		val (temporaryUpdates, permanentUpdates) = data.divideWith { case (position, square) =>
+			square match {
 				case p: PermanentSquare => Right(position -> p)
 				case t: TemporarySquare => Left(position -> (t -> dataTime))
 			}
@@ -190,7 +189,7 @@ case class MapMemory(base: BaseMapMemory, temporariesData: Map[GridPosition, (Te
 	{
 		val routesByLength = treasureRoutes.toMultiMap { route => route._1.actualTravelDistance -> route }
 		routesByLength.keys.minOption.map { shortestLength =>
-			routesByLength(shortestLength).bestMatch(Vector(_._2 == currentHeading)).maxBy { _._3 }
+			routesByLength(shortestLength).bestMatch { _._2 == currentHeading }.maxBy { _._3 }
 		}
 	}
 	

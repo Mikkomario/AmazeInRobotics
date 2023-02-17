@@ -1,8 +1,8 @@
 package robots.controller
 
-import robots.model.{BaseGrid, GridPosition, WorldMap}
 import robots.model.enumeration.Square.{Empty, Wall}
-import utopia.flow.util.LinesFrom
+import robots.model.{BaseGrid, GridPosition, WorldMap}
+import utopia.flow.parse.string.LinesFrom
 
 import java.nio.file.Path
 import scala.collection.immutable.VectorBuilder

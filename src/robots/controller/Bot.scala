@@ -1,21 +1,22 @@
 package robots.controller
 
 import robots.controller.GlobalBotSettings._
-import robots.model.{BotColors, GridPosition, MapMemory}
-import robots.model.enumeration.{RobotCommand, StunCause}
-import robots.model.enumeration.RobotCommand.{LinearScan, MiniScan, Move, MoveTowards, RotateHead, WideScan}
+import robots.model.enumeration.RobotCommand._
 import robots.model.enumeration.RobotCommandType.{HeadRotation, Interact, Movement, Scan}
 import robots.model.enumeration.StunCause.MovementCollision
-import utopia.flow.async.VolatileOption
-import utopia.flow.collection.VolatileList
-import utopia.flow.datastructure.mutable.PointerWithEvents
-import utopia.genesis.animation.Animation
+import robots.model.enumeration.{RobotCommand, StunCause}
+import robots.model.{BotColors, GridPosition, MapMemory}
+import utopia.flow.collection.mutable.VolatileList
+import utopia.flow.view.mutable.async.VolatileOption
+import utopia.flow.view.mutable.eventful.PointerWithEvents
 import utopia.genesis.handling.{Actor, Drawable}
-import utopia.genesis.shape.shape1D.{Angle, Rotation, RotationDirection}
-import utopia.genesis.shape.shape2D.Direction2D.{Down, Up}
-import utopia.genesis.shape.shape2D._
 import utopia.genesis.util.Drawer
 import utopia.inception.handling.immutable.Handleable
+import utopia.paradigm.angular.{Angle, Rotation}
+import utopia.paradigm.animation.Animation
+import utopia.paradigm.enumeration.Direction2D.{Down, Up}
+import utopia.paradigm.enumeration.{Direction2D, RotationDirection}
+import utopia.paradigm.shape.shape2d._
 
 import java.awt.Shape
 import java.time.Instant

@@ -3,22 +3,22 @@ package robots.view
 import robots.controller.ai.SimpleAi
 import robots.controller.{Bot, BotCommandInterface, GlobalBotSettings, World}
 import robots.model.{BotColors, WorldMap}
+import robots.util.Common._
 import utopia.bunnymunch.jawn.JsonBunny
 import utopia.flow.async.AsyncExtensions._
-import utopia.flow.async.ThreadPool
-import utopia.flow.util.CollectionExtensions._
-import utopia.flow.util.FileExtensions._
+import utopia.flow.collection.CollectionExtensions._
+import utopia.flow.operator.EqualsExtensions._
+import utopia.flow.parse.file.FileExtensions._
 import utopia.flow.time.TimeExtensions._
-import utopia.flow.util.StringExtensions._
-import utopia.genesis.color.Color
-import utopia.genesis.shape.shape2D.Direction2D.Up
-import utopia.genesis.shape.shape2D.Size
 import utopia.genesis.util.DefaultSetup
 import utopia.genesis.view.GlobalKeyboardEventHandler
+import utopia.paradigm.color.Color
+import utopia.paradigm.enumeration.Direction2D.Up
+import utopia.paradigm.shape.shape2d.Size
 
 import java.nio.file.Path
 import java.time.Instant
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.util.{Failure, Success}
 
 /**
@@ -28,8 +28,6 @@ import scala.util.{Failure, Success}
  */
 object AmazeInRobotsApp extends App
 {
-	implicit val exc: ExecutionContext = new ThreadPool("AmazeInRobots").executionContext
-	
 	val botColors = BotColors(Color.red.timesLuminosity(0.66), Color.red, Color.cyan.withAlpha(0.66))
 	
 	/*

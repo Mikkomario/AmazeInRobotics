@@ -1,7 +1,7 @@
 package robots.controller
 
 import utopia.flow.time.TimeExtensions._
-import utopia.genesis.shape.shape2D.Size
+import utopia.paradigm.shape.shape2d.Size
 
 /**
  * Global configurations used in bot functions

@@ -7,12 +7,11 @@ import robots.model.enumeration.Square
 import robots.model.enumeration.Square.Empty
 import robots.editor.view.util.RobotsSetup._
 import robots.model.WorldMap
-import utopia.flow.datastructure.mutable.PointerWithEvents
-import utopia.flow.util.CollectionExtensions._
-import utopia.flow.util.FileExtensions._
+import utopia.flow.view.mutable.eventful.PointerWithEvents
+import utopia.flow.collection.CollectionExtensions._
+import utopia.flow.parse.file.FileExtensions._
 import utopia.flow.util.StringExtensions._
-import utopia.genesis.shape.Axis.X
-import utopia.reach.component.button.{ContextualImageAndTextButtonFactory, ImageAndTextButton}
+import utopia.paradigm.enumeration.Axis.X
 import utopia.reach.component.factory.Mixed
 import utopia.reach.component.hierarchy.ComponentHierarchy
 import utopia.reach.component.template.{ReachComponentLike, ReachComponentWrapper}
@@ -21,7 +20,8 @@ import utopia.reach.container.multi.stack.Stack
 import utopia.reach.container.wrapper.{AlignFrame, Framing}
 import utopia.reflection.component.context.{ButtonContext, ColorContext, TextContext}
 import utopia.reflection.component.drawing.immutable.BackgroundDrawer
-import utopia.reflection.shape.Alignment.Center
+import utopia.paradigm.enumeration.Alignment.Center
+import utopia.reach.component.button.image.{ContextualImageAndTextButtonFactory, ImageAndTextButton}
 import utopia.reflection.shape.stack.StackLength
 import utopia.reflection.shape.LengthExtensions._
 

@@ -1,9 +1,9 @@
 package robots.model.enumeration
 
-import utopia.genesis.shape.shape2D.Direction2D
+import utopia.paradigm.enumeration.Direction2D
 import robots.controller.GlobalBotSettings._
 import robots.model.enumeration.RobotCommandType.{HeadRotation, Interact, Movement, Scan}
-import utopia.genesis.shape.shape1D.RotationDirection
+import utopia.paradigm.enumeration.RotationDirection
 
 import scala.concurrent.duration.Duration
 

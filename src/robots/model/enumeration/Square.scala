@@ -1,8 +1,8 @@
 package robots.model.enumeration
 
-import robots.model.enumeration.Square.{BotLocation, Empty, Fog, GlassWall, TreasureLocation, Wall}
+import robots.model.enumeration.Square._
 import utopia.flow.time.TimeExtensions._
-import utopia.genesis.color.Color
+import utopia.paradigm.color.Color
 
 import scala.concurrent.duration.Duration
 
